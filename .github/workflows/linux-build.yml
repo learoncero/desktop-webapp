@@ -2,7 +2,8 @@ name: Build Linux App
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '**'
   pull_request:
 
 jobs:
@@ -35,5 +36,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-build
+          name: linux-build-${{ github.ref_name }}
           path: client/build/linux/x64/release/bundle/
