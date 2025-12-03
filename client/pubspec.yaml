@@ -38,6 +38,7 @@ dependencies:
   menu_bar: ^0.5.3
   file_selector: ^1.1.0
   file_picker: ^5.2.5
+  package_info_plus: ^4.0.0
 
 dev_dependencies:
   flutter_test:
