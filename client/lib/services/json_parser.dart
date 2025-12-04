@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:sensor_data_app/data/sensor_packet.dart';
+import 'package:sensor_data_app/models/sensor_packet.dart';
 
 class SensorJsonParser {
   static SensorPacket? parse(String line) {
