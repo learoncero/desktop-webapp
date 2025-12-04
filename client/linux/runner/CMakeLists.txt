@@ -25,18 +25,3 @@ target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
-# Install Linux app icon inside build bundle
-install(FILES "resources/sensordash.png"
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/data/icons"
-)
-
-configure_file(
-  "resources/sensordash.desktop.in"
-  "${PROJECT_BINARY_DIR}/sensordash.desktop"
-  @ONLY
-)
-
-install(FILES "${PROJECT_BINARY_DIR}/sensordash.desktop"
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
-)
-
