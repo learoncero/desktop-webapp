@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
-import 'package:sensor_data_app/views/app_menu.dart';
 import '../widgets/graph_section.dart';
 import '../widgets/serial_connection_panel.dart';
+import 'app_menu.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,40 +12,18 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Create the model once and keep it alive for the lifetime of this page
   late final SerialConnectionViewModel _connectionModel;
 
   @override
   void initState() {
     super.initState();
     _connectionModel = SerialConnectionViewModel();
-
-    // Listen to the model if you need to react to changes in HomePage
-    _connectionModel.addListener(_onConnectionStateChanged);
   }
 
   @override
   void dispose() {
-    _connectionModel.removeListener(_onConnectionStateChanged);
     _connectionModel.dispose();
     super.dispose();
-  }
-
-  void _onConnectionStateChanged() {
-    // React to model changes here if needed
-    // For example, you could access _connectionModel.lastPacket
-    // and forward it to GraphSection
-
-    // Show error snackbar if there's an error
-    // if (_connectionModel.errorMessage != null) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(_connectionModel.errorMessage!),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   _connectionModel.clearError();
-    // }
   }
 
   @override
