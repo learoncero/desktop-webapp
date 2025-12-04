@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=SensorDash
+Exec=SensorDash
+Icon=sensordash
+Terminal=false
+Categories=Utility;
