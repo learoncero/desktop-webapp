@@ -2,6 +2,6 @@
 Type=Application
 Name=SensorDash
 Exec=SensorDash
-Icon=sensordash
+Icon=data/icons/sensordash.png
 Terminal=false
 Categories=Utility;
