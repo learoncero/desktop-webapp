@@ -30,7 +30,7 @@ class SerialConnectionPanel extends StatelessWidget {
       builder: (context, child) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: Colors.grey[900],
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
           child: Row(
             children: [
               const Text("Baudrate:"),
