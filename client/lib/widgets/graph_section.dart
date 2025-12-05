@@ -34,9 +34,9 @@ class _GraphSectionState extends State<GraphSection> {
           selectedFolderPath = folderPath;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Selected folder: $folderPath')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Selected folder: $folderPath')));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Folder selection canceled')),
@@ -71,57 +71,61 @@ class _GraphSectionState extends State<GraphSection> {
         Expanded(
           child: Container(
             width: double.infinity,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             alignment: Alignment.center,
             child: Text(
               'Sensor Graph Placeholder',
               style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 22
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 22,
               ),
             ),
           ),
         ),
 
-        const SizedBox(height: 20),
-
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Record button
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(40),
-                onTap: () {
-                  setState(() {
-                    isRecording = !isRecording;
-                  });
-                  // Placeholder: start/stop logic goes here
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 80,
-                  height: 80,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isRecording ? Colors.red : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: isRecording ? null : Border.all(color: Colors.red, width: 4),
-                    boxShadow: isRecording
-                        ? [
-                      BoxShadow(
-                        color: const Color.fromRGBO(255, 0, 0, 0.5),
-                        blurRadius: 20,
-                        spreadRadius: 5,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20, top: 20),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(40),
+                  onTap: () {
+                    setState(() {
+                      isRecording = !isRecording;
+                    });
+                    // Placeholder: start/stop logic goes here
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 70,
+                    height: 70,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isRecording ? Colors.red : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: isRecording
+                          ? null
+                          : Border.all(color: Colors.red, width: 4),
+                      boxShadow: isRecording
+                          ? [
+                              BoxShadow(
+                                color: const Color.fromRGBO(255, 0, 0, 0.5),
+                                blurRadius: 7,
+                                spreadRadius: 3,
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Text(
+                      "REC",
+                      style: TextStyle(
+                        color: isRecording ? Colors.white : Colors.red,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ] : [],
-                  ),
-                  child: Text(
-                    "REC",
-                    style: TextStyle(
-                      color: isRecording ? Colors.white : Colors.red,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -144,8 +148,6 @@ class _GraphSectionState extends State<GraphSection> {
           ],
         ),
 
-        const SizedBox(height: 10),
-
         // Display selected folder path
         if (selectedFolderPath != null)
           Padding(
@@ -153,7 +155,7 @@ class _GraphSectionState extends State<GraphSection> {
             child: Text(
               'Selected Folder: $selectedFolderPath',
               style: TextStyle(
-                color: Colors.grey[300],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
             ),
