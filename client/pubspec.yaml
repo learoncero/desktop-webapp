@@ -39,6 +39,7 @@ dependencies:
   file_selector: ^1.1.0
   file_picker: ^5.2.5
   package_info_plus: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -91,3 +92,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  image_path: "assets/images/icon.png"
+  linux: true
