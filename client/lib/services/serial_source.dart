@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_data_app/services/json_parser.dart';
@@ -25,7 +26,7 @@ class SerialSource {
     reader = SerialPortReader(port!);
     reader!.stream.listen(
       (data) {
-        final line = String.fromCharCodes(data).trim();
+        final line = utf8.decode(data).trim();
 
         // Ignore lines that don't look like JSON (ESP log messages)
         if (!line.startsWith('{')) {

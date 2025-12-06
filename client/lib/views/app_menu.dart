@@ -9,6 +9,8 @@ class AppMenu extends StatelessWidget {
     final info = await PackageInfo.fromPlatform();
     final version = '${info.version}+${info.buildNumber}';
 
+    if (!context.mounted) return;
+
     showAboutDialog(
       context: context,
       applicationName: 'Sensor Data App',

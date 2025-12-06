@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sensor_data_app/models/sampled_value.dart';
 import 'package:sensor_data_app/services/serial_source.dart';
-import 'package:sensor_data_app/models/sensor_packet.dart';
+import 'package:sensor_data_app/services/sampling_manager.dart';
 import 'dart:developer';
 
 class SerialConnectionViewModel extends ChangeNotifier {
@@ -9,8 +10,14 @@ class SerialConnectionViewModel extends ChangeNotifier {
   int _selectedBaudrate = 115200;
   bool _isConnected = false;
   SerialSource? _serial;
-  SensorPacket? _lastPacket;
   String? _errorMessage;
+
+  // Sampling state
+  SamplingManager? _samplingManager;
+  String? _selectedSensorForPlot;
+  String? _currentSensorUnit;
+  SampledValue? _currentSample;
+  List<String> _availableSensors = [];
 
   static const List<int> availableBaudrates = [
     9600,
@@ -33,8 +40,10 @@ class SerialConnectionViewModel extends ChangeNotifier {
   String? get selectedPort => _selectedPort;
   int get selectedBaudrate => _selectedBaudrate;
   bool get isConnected => _isConnected;
-  SensorPacket? get lastPacket => _lastPacket;
-  String? get errorMessage => _errorMessage;
+  String? get selectedSensorForPlot => _selectedSensorForPlot;
+  String? get currentSensorUnit => _currentSensorUnit;
+  SampledValue? get currentSample => _currentSample;
+  List<String> get availableSensors => _availableSensors;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -46,6 +55,13 @@ class SerialConnectionViewModel extends ChangeNotifier {
   void selectBaudrate(int baudrate) {
     if (_isConnected) return;
     _selectedBaudrate = baudrate;
+    notifyListeners();
+  }
+
+  void selectSensorForPlot(String sensorName) {
+    if (!_isConnected || !_availableSensors.contains(sensorName)) return;
+    _selectedSensorForPlot = sensorName;
+    _samplingManager?.selectSensor(sensorName);
     notifyListeners();
   }
 
@@ -61,14 +77,35 @@ class SerialConnectionViewModel extends ChangeNotifier {
     }
 
     try {
+      // Initialize sampling manager (samples every 1 second)
+      _samplingManager = SamplingManager(
+        selectedSensorName: _selectedSensorForPlot,
+        onSampleReady: (sensorName, unit, sample) {
+          _selectedSensorForPlot = sensorName;
+          _currentSensorUnit = unit;
+          _currentSample = sample;
+          notifyListeners();
+        },
+      );
+
       _serial = SerialSource(_selectedPort!, _selectedBaudrate);
 
       final success = _serial!.connect(
         onPacket: (packet) {
-          _lastPacket = packet;
           _errorMessage = null;
 
-          // Log the packet
+          // Track available sensors from packet
+          final sensorNames = packet.payload.map((s) => s.displayName).toList();
+          if (_availableSensors.isEmpty) {
+            _availableSensors = sensorNames;
+            // Auto-select first sensor if none selected
+            if (_selectedSensorForPlot == null && sensorNames.isNotEmpty) {
+              _selectedSensorForPlot = sensorNames.first;
+            }
+          }
+
+          _samplingManager?.addPacket(packet);
+
           log(
             'Packet: ${packet.payload.length} sensors at ${packet.timestamp}',
           );
@@ -77,8 +114,6 @@ class SerialConnectionViewModel extends ChangeNotifier {
               '  ${sensor.displayName}: ${sensor.data} ${sensor.displayUnit}',
             );
           }
-
-          notifyListeners();
         },
         onError: (error) {
           log('Serial error: $error');
@@ -106,23 +141,27 @@ class SerialConnectionViewModel extends ChangeNotifier {
     }
   }
 
-  /// Disconnect from the serial port
   void disconnect() {
+    if (_samplingManager != null) {
+      _samplingManager!.dispose();
+    }
+
     _serial?.disconnect();
     _serial = null;
+    _samplingManager = null;
     _isConnected = false;
-    _lastPacket = null;
+    _selectedSensorForPlot = null;
+    _currentSensorUnit = null;
+    _currentSample = null;
+    _availableSensors = [];
     notifyListeners();
-  }
 
-  /// Clear error message
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
+    log('Disconnected from serial port');
   }
 
   @override
   void dispose() {
+    _samplingManager?.dispose();
     disconnect();
     super.dispose();
   }
