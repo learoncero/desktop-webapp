@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
+import 'package:provider/provider.dart';
 import '../widgets/graph_section.dart';
 import '../widgets/serial_connection_panel.dart';
 import 'app_menu.dart';
@@ -35,11 +36,14 @@ class _HomePageState extends State<HomePage> {
         child: AppMenu(),
       ),
 
-      body: Column(
-        children: [
-          SerialConnectionPanel(viewModel: _connectionModel),
-          const Expanded(child: GraphSection()),
-        ],
+      body: ChangeNotifierProvider.value(
+        value: _connectionModel,
+        child: Column(
+          children: [
+            SerialConnectionPanel(viewModel: _connectionModel),
+            const Expanded(child: GraphSection()),
+          ],
+        ),
       ),
     );
   }
