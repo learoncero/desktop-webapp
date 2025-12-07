@@ -37,8 +37,12 @@ jobs:
         run: flutter build linux --release
         working-directory: client
 
+      - name: Sanitize branch name
+        id: sanitize
+        run: echo "SANITIZED_REF=${GITHUB_REF_NAME//\//_}" >> $GITHUB_ENV
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: name: linux-build-${{ format('{0}', github.ref_name) }}
+          name: linux-build-${{ env.SANITIZED_REF }}
           path: client/build/linux/x64/release/bundle/
