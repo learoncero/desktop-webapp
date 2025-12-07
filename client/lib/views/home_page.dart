@@ -38,7 +38,7 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           SerialConnectionPanel(viewModel: _connectionModel),
-          const Expanded(child: GraphSection()),
+          Expanded(child: GraphSection(viewModel: _connectionModel)),
         ],
       ),
     );
