@@ -28,6 +28,10 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
         working-directory: client
+        
+      - name: Run Flutter tests
+        run: flutter test
+        working-directory: client
 
       - name: Build release
         run: flutter build linux --release
@@ -36,5 +40,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-build-${{ github.ref_name }}
+          name: linux-build-${{ github.ref_name.replace('/', '_') }}
           path: client/build/linux/x64/release/bundle/
