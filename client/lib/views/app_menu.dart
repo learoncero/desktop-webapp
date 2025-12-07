@@ -82,6 +82,7 @@ class _AppMenuState extends State<AppMenu> {
                       text: const Text("Switch Theme"),
                       onTap: _toggleTheme,
                     ),
+                    const MenuDivider(),
                     MenuButton(
                       text: const Text("Settings"),
                       onTap: () {
