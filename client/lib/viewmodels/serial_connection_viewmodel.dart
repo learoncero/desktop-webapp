@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:sensor_data_app/models/sampled_value.dart';
 import 'package:sensor_data_app/services/serial_source.dart';
@@ -18,6 +19,14 @@ class SerialConnectionViewModel extends ChangeNotifier {
   String? _currentSensorUnit;
   SampledValue? _currentSample;
   List<String> _availableSensors = [];
+
+  // Plot
+  final List<FlSpot> _graphPoints = [];
+  int _graphIndex = 0;
+  double _visibleStart = 0;
+  final double _visibleRange = 60;
+  bool _graphSliding = false;
+  String _graphStartTime = "";
 
   static const List<int> availableBaudrates = [
     9600,
@@ -44,6 +53,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
   String? get currentSensorUnit => _currentSensorUnit;
   SampledValue? get currentSample => _currentSample;
   List<String> get availableSensors => _availableSensors;
+  List<FlSpot> get graphPoints => _graphPoints;
+  double get visibleStart => _visibleStart;
+  double get visibleRange => _visibleRange;
+  bool get graphSliding => _graphSliding;
+  String get graphStartTime => _graphStartTime;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -62,6 +76,10 @@ class SerialConnectionViewModel extends ChangeNotifier {
     if (!_isConnected || !_availableSensors.contains(sensorName)) return;
     _selectedSensorForPlot = sensorName;
     _samplingManager?.selectSensor(sensorName);
+    // reset graph when source changes
+    _graphPoints.clear();
+    _graphIndex = 0;
+    _graphStartTime = "";
     notifyListeners();
   }
 
@@ -84,6 +102,12 @@ class SerialConnectionViewModel extends ChangeNotifier {
           _selectedSensorForPlot = sensorName;
           _currentSensorUnit = unit;
           _currentSample = sample;
+          addSampleToGraph(sample.value);
+          _graphStartTime = _graphStartTime.isNotEmpty
+              ? _graphStartTime
+              : "${sample.timestamp.toLocal().year}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().day.toString().padLeft(2, '0')} "
+                    "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+
           notifyListeners();
         },
       );
@@ -141,6 +165,41 @@ class SerialConnectionViewModel extends ChangeNotifier {
     }
   }
 
+  // Plot graph
+  List<FlSpot> get visibleGraphPoints {
+    return graphPoints.where((spot) {
+      return spot.x >= _visibleStart && spot.x <= _visibleStart + _visibleRange;
+    }).toList();
+  }
+
+  void addSampleToGraph(double value) {
+    graphPoints.add(FlSpot(_graphIndex.toDouble(), value));
+    _graphIndex++;
+    if (!_graphSliding) {
+      _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
+    }
+    notifyListeners();
+  }
+
+  // Slider for Graph Plot
+  double get maxGraphWindowStart {
+    if (graphPoints.length <= _visibleRange) return 0;
+    return (graphPoints.length - _visibleRange).toDouble();
+  }
+
+  void updateVisibleStart(double value) {
+    _graphSliding = true;
+    _visibleStart = value;
+    notifyListeners();
+  }
+
+  void resetGraph() {
+    _graphSliding = false;
+    _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
+    notifyListeners();
+  }
+
+  // Disconnect from Data Source
   void disconnect() {
     if (_samplingManager != null) {
       _samplingManager!.dispose();
@@ -154,6 +213,10 @@ class SerialConnectionViewModel extends ChangeNotifier {
     _currentSensorUnit = null;
     _currentSample = null;
     _availableSensors = [];
+    _graphIndex = 0;
+    graphPoints.clear();
+    _graphStartTime = "";
+
     notifyListeners();
 
     log('Disconnected from serial port');
