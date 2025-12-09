@@ -239,47 +239,45 @@ class _GraphSectionState extends State<GraphSection> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Record button
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(40),
-                onTap: () {
-                  setState(() {
-                    isRecording = !isRecording;
-                  });
-                  // Placeholder: start/stop logic goes here
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 80,
-                  height: 80,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isRecording ? Colors.red : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: isRecording
-                        ? null
-                        : Border.all(
-                            color: Theme.of(context).colorScheme.error,
-                            width: 4,
-                          ),
-                    boxShadow: isRecording
-                        ? [
-                            BoxShadow(
-                              color: const Color.fromRGBO(255, 0, 0, 0.5),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    "REC",
-                    style: TextStyle(
-                      color: isRecording
-                          ? Theme.of(context).colorScheme.onError
-                          : Theme.of(context).colorScheme.error,
-                      fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20, top: 20),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(40),
+                  onTap: () {
+                    setState(() {
+                      isRecording = !isRecording;
+                    });
+                    // Placeholder: start/stop logic goes here
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 70,
+                    height: 70,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isRecording ? Colors.red : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: isRecording
+                          ? null
+                          : Border.all(color: Colors.red, width: 4),
+                      boxShadow: isRecording
+                          ? [
+                              BoxShadow(
+                                color: const Color.fromRGBO(255, 0, 0, 0.5),
+                                blurRadius: 7,
+                                spreadRadius: 3,
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Text(
+                      "REC",
+                      style: TextStyle(
+                        color: isRecording ? Colors.white : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -301,8 +299,6 @@ class _GraphSectionState extends State<GraphSection> {
             ),
           ],
         ),
-
-        const SizedBox(height: 10),
 
         // Display selected folder path
         if (selectedFolderPath != null)

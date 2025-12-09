@@ -28,13 +28,21 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
         working-directory: client
+        
+      - name: Run Flutter tests
+        run: flutter test
+        working-directory: client
 
       - name: Build release
         run: flutter build linux --release
         working-directory: client
 
+      - name: Sanitize branch name
+        id: sanitize
+        run: echo "SANITIZED_REF=${GITHUB_REF_NAME//\//_}" >> $GITHUB_ENV
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-build-${{ github.ref_name }}
+          name: linux-build-${{ env.SANITIZED_REF }}
           path: client/build/linux/x64/release/bundle/
