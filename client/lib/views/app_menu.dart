@@ -31,20 +31,67 @@ class _AppMenuState extends State<AppMenu> {
     );
   }
 
-  void _toggleTheme() {
-    setState(() {
-      if (_currentThemeMode == ThemeMode.light) {
-        _currentThemeMode = ThemeMode.dark;
-      } else if (_currentThemeMode == ThemeMode.dark) {
-        _currentThemeMode = ThemeMode.light;
-      } else {
-        final brightness = MediaQuery.of(context).platformBrightness;
-        _currentThemeMode = brightness == Brightness.dark
-            ? ThemeMode.light
-            : ThemeMode.dark;
-      }
-    });
-    MyApp.setThemeMode(context, _currentThemeMode);
+  Future<void> _showSettings(BuildContext context) async {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Settings'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Theme',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  RadioGroup<ThemeMode>(
+                    groupValue: _currentThemeMode,
+                    onChanged: (ThemeMode? value) {
+                      if (value != null) {
+                        setState(() {
+                          _currentThemeMode = value;
+                        });
+                        setDialogState(() {});
+                        MyApp.setThemeMode(context, value);
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: const Text('System'),
+                          leading: Radio<ThemeMode>(value: ThemeMode.system),
+                        ),
+                        ListTile(
+                          title: const Text('Light'),
+                          leading: Radio<ThemeMode>(value: ThemeMode.light),
+                        ),
+                        ListTile(
+                          title: const Text('Dark'),
+                          leading: Radio<ThemeMode>(value: ThemeMode.dark),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Close'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -79,14 +126,9 @@ class _AppMenuState extends State<AppMenu> {
                 submenu: SubMenu(
                   menuItems: [
                     MenuButton(
-                      text: const Text("Switch Theme"),
-                      onTap: _toggleTheme,
-                    ),
-                    const MenuDivider(),
-                    MenuButton(
                       text: const Text("Settings"),
                       onTap: () {
-                        // Handle settings action
+                        _showSettings(context);
                       },
                     ),
                   ],
