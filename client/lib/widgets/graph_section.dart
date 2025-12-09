@@ -183,17 +183,33 @@ class _GraphSectionState extends State<GraphSection> {
           child: Row(
             children: [
               // Starttime for plot
-              ListenableBuilder(
-                listenable: widget.viewModel,
-                builder: (context, child) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Start Time:",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
-                    child: Text(widget.viewModel.graphStartTime),
-                  );
-                },
+                    ListenableBuilder(
+                      listenable: widget.viewModel,
+                      builder: (context, child) {
+                        return Text(
+                          widget.viewModel.graphStartTime != ""
+                              ? widget.viewModel.graphStartTime
+                              : "Not Connected",
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
 
               // Slider
