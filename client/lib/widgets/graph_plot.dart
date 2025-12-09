@@ -7,19 +7,18 @@ class LineChartGraph extends StatelessWidget {
     super.key,
     required this.spots,
     required this.displayMax,
+    required this.sensorUnit,
   });
 
   final List<FlSpot> spots;
   final int displayMax;
+  final String? sensorUnit;
 
   Widget bottomTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     if (value % 1 != 0) {
       return Container();
     }
-    final style = TextStyle(
-      color: const Color.fromARGB(255, 255, 255, 255),
-      fontSize: min(13, 18 * chartWidth / 300),
-    );
+    final style = TextStyle(fontSize: min(13, 18 * chartWidth / 300));
     return SideTitleWidget(
       meta: meta,
       space: 8,
@@ -32,10 +31,7 @@ class LineChartGraph extends StatelessWidget {
   }
 
   Widget leftTitleWidgets(double value, TitleMeta meta, double chartWidth) {
-    final style = TextStyle(
-      color: const Color.fromARGB(255, 255, 255, 255),
-      fontSize: min(13, 18 * chartWidth / 300),
-    );
+    final style = TextStyle(fontSize: min(13, 18 * chartWidth / 300));
     return SideTitleWidget(
       meta: meta,
       space: 16,
@@ -67,7 +63,8 @@ class LineChartGraph extends StatelessWidget {
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
                   maxContentWidth: 100,
-                  getTooltipColor: (touchedSpot) => Colors.black,
+                  getTooltipColor: (touchedSpot) =>
+                      Theme.of(context).colorScheme.surfaceContainerHigh,
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((LineBarSpot touchedSpot) {
                       final textStyle = TextStyle(
@@ -78,7 +75,7 @@ class LineChartGraph extends StatelessWidget {
                         fontSize: 14,
                       );
                       return LineTooltipItem(
-                        '${touchedSpot.x}, ${touchedSpot.y.toStringAsFixed(2)}',
+                        '${touchedSpot.x.toInt()}s, ${touchedSpot.y.toStringAsFixed(2)} $sensorUnit',
                         textStyle,
                       );
                     }).toList();
@@ -135,12 +132,12 @@ class LineChartGraph extends StatelessWidget {
                 horizontalInterval: 1,
                 verticalInterval: 1,
                 getDrawingHorizontalLine: (_) => FlLine(
-                  color: const Color.fromARGB(255, 255, 255, 255),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   dashArray: [5, 5],
                   strokeWidth: 0.8,
                 ),
                 getDrawingVerticalLine: (_) => FlLine(
-                  color: const Color.fromARGB(255, 255, 255, 255),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   dashArray: [5, 5],
                   strokeWidth: 0.8,
                 ),

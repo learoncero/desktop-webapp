@@ -87,6 +87,7 @@ class _GraphSectionState extends State<GraphSection> {
                       displayMax:
                           widget.viewModel.visibleStart.toInt() +
                           widget.viewModel.visibleRange.toInt(),
+                      sensorUnit: widget.viewModel.currentSensorUnit,
                     );
                   },
                 ),
