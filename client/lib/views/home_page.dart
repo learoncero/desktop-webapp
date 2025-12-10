@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
+import '../main.dart';
 import '../widgets/graph_section.dart';
 import '../widgets/serial_connection_panel.dart';
 import 'app_menu.dart';
@@ -30,9 +31,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       // Put the app menu into the appBar so it receives proper bounded constraints.
-      appBar: const PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
-        child: AppMenu(),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: AppMenu(currentThemeMode: MyApp.getThemeMode(context)),
       ),
 
       body: Column(

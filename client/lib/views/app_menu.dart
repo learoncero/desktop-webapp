@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:menu_bar/menu_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../main.dart';
+import '../widgets/settings_dialog.dart';
 
-class AppMenu extends StatefulWidget {
-  const AppMenu({super.key});
+class AppMenu extends StatelessWidget {
+  final ThemeMode currentThemeMode;
 
-  @override
-  State<AppMenu> createState() => _AppMenuState();
-}
-
-class _AppMenuState extends State<AppMenu> {
-  ThemeMode _currentThemeMode = ThemeMode.system;
+  const AppMenu({super.key, required this.currentThemeMode});
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -34,62 +29,8 @@ class _AppMenuState extends State<AppMenu> {
   Future<void> _showSettings(BuildContext context) async {
     showDialog<void>(
       context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Settings'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Theme',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  RadioGroup<ThemeMode>(
-                    groupValue: _currentThemeMode,
-                    onChanged: (ThemeMode? value) {
-                      if (value != null) {
-                        setState(() {
-                          _currentThemeMode = value;
-                        });
-                        setDialogState(() {});
-                        MyApp.setThemeMode(context, value);
-                      }
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          title: const Text('System'),
-                          leading: Radio<ThemeMode>(value: ThemeMode.system),
-                        ),
-                        ListTile(
-                          title: const Text('Light'),
-                          leading: Radio<ThemeMode>(value: ThemeMode.light),
-                        ),
-                        ListTile(
-                          title: const Text('Dark'),
-                          leading: Radio<ThemeMode>(value: ThemeMode.dark),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Close'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
+      builder: (BuildContext dialogContext) {
+        return SettingsDialog(currentThemeMode: currentThemeMode);
       },
     );
   }
