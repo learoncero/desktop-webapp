@@ -33,7 +33,10 @@ class _HomePageState extends State<HomePage> {
       // Put the app menu into the appBar so it receives proper bounded constraints.
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AppMenu(currentThemeMode: MyApp.getThemeMode(context)),
+        child: AppMenu(
+          currentThemeMode: MyApp.getThemeMode(context),
+          viewModel: _connectionModel,
+        ),
       ),
 
       body: Column(

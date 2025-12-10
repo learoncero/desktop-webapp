@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../viewmodels/serial_connection_viewmodel.dart';
 
 class SettingsDialog extends StatefulWidget {
   final ThemeMode currentThemeMode;
+  final SerialConnectionViewModel? viewModel;
 
-  const SettingsDialog({super.key, required this.currentThemeMode});
+  const SettingsDialog({
+    super.key,
+    required this.currentThemeMode,
+    this.viewModel,
+  });
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -12,11 +18,13 @@ class SettingsDialog extends StatefulWidget {
 
 class _SettingsDialogState extends State<SettingsDialog> {
   late ThemeMode _selectedTheme;
+  late double _visibleRange;
 
   @override
   void initState() {
     super.initState();
     _selectedTheme = widget.currentThemeMode;
+    _visibleRange = widget.viewModel?.visibleRange ?? 60;
   }
 
   @override
@@ -60,6 +68,36 @@ class _SettingsDialogState extends State<SettingsDialog> {
               ],
             ),
           ),
+          if (widget.viewModel != null) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Graph Window',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('Visible Range:'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Slider(
+                    value: _visibleRange,
+                    min: 10,
+                    max: 300,
+                    divisions: 29,
+                    label: '${_visibleRange.round()}s',
+                    onChanged: (value) {
+                      setState(() {
+                        _visibleRange = value;
+                      });
+                      widget.viewModel?.setVisibleRange(value);
+                    },
+                  ),
+                ),
+                Text('${_visibleRange.round()}s'),
+              ],
+            ),
+          ],
         ],
       ),
       actions: <Widget>[

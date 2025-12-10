@@ -24,7 +24,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   final List<FlSpot> _graphPoints = [];
   int _graphIndex = 0;
   double _visibleStart = 0;
-  final double _visibleRange = 60;
+  double _visibleRange = 60;
   bool _graphSliding = false;
   String _graphStartTime = "";
 
@@ -70,6 +70,13 @@ class SerialConnectionViewModel extends ChangeNotifier {
   void selectBaudrate(int baudrate) {
     if (_isConnected) return;
     _selectedBaudrate = baudrate;
+    notifyListeners();
+  }
+
+  void setVisibleRange(double range) {
+    if (range < 10 || range > 300) return;
+    _visibleRange = range;
+    _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
     notifyListeners();
   }
 
