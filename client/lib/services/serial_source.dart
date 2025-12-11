@@ -36,9 +36,6 @@ class SerialSource {
         // Parse packet
         final packet = SensorJsonParser.parse(line);
         if (packet != null) {
-          if (kDebugMode) {
-            print('Parsed packet with ${packet.payload.length} sensors');
-          }
           onPacket(packet);
         }
       },

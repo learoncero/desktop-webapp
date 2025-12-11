@@ -149,22 +149,42 @@ class _GraphSectionState extends State<GraphSection> {
                                   },
                           ),
                           // Show current value if available
-                          if (widget.viewModel.currentSample != null) ...[
+                          if (widget.viewModel.currentSamples != null &&
+                              selectedSensor != null) ...[
                             const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                '${widget.viewModel.currentSample!.value.toStringAsFixed(2)} '
-                                '${widget.viewModel.currentSensorUnit ?? ""}',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
+                            Builder(
+                              builder: (context) {
+                                // Find the sample for the selected sensor
+                                final selectedSample = widget
+                                    .viewModel
+                                    .currentSamples!
+                                    .firstWhere(
+                                      (sample) =>
+                                          sample.dataStream == selectedSensor,
+                                      orElse: () => widget
+                                          .viewModel
+                                          .currentSamples!
+                                          .first,
+                                    );
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    '${selectedSample.value.toStringAsFixed(2)} '
+                                    '${selectedSample.dataUnit}',
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ],

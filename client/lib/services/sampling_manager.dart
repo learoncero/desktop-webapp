@@ -5,42 +5,29 @@ import 'package:sensor_data_app/models/sensor_packet.dart';
 class SamplingManager {
   static const int samplingIntervalSeconds = 1; // Sample every 1 second
 
-  String? _selectedSensorName;
-  String? _currentSensorUnit;
-  final List<double> _collectedValues = [];
+  final Map<String, List<double>> _collectedValuesBySensor = {};
+  final Map<String, String> _sensorUnits = {};
   Timer? _samplingTimer;
 
-  // Callback for when new averaged sample is ready
-  final void Function(String sensorName, String unit, SampledValue sample)
-  onSampleReady;
+  // Callback for when new averaged samples are ready
+  final void Function(List<SampledValue> samples) onSampleReady;
 
-  SamplingManager({String? selectedSensorName, required this.onSampleReady})
-    : _selectedSensorName = selectedSensorName {
+  SamplingManager({required this.onSampleReady}) {
     _startSampling();
   }
 
-  /// Add a packet - collects the value for the selected sensor
   void addPacket(SensorPacket packet) {
-    if (packet.payload.isEmpty) return;
+    if (packet.payload.isEmpty) {
+      return;
+    }
 
-    // If no sensor is selected yet, select the first one
-    _selectedSensorName ??= packet.payload.first.displayName;
+    for (final sensor in packet.payload) {
+      final sensorName = sensor.displayName;
 
-    // Find the selected sensor in the packet
-    final sensor = packet.payload.firstWhere(
-      (s) => s.displayName == _selectedSensorName,
-      orElse: () => packet.payload.first,
-    );
-
-    _currentSensorUnit = sensor.displayUnit;
-    _collectedValues.add(sensor.data);
-  }
-
-  void selectSensor(String sensorName) {
-    if (_selectedSensorName == sensorName) return;
-
-    _selectedSensorName = sensorName;
-    clear();
+      _collectedValuesBySensor.putIfAbsent(sensorName, () => []);
+      _sensorUnits[sensorName] = sensor.displayUnit;
+      _collectedValuesBySensor[sensorName]!.add(sensor.data);
+    }
   }
 
   void _startSampling() {
@@ -50,31 +37,45 @@ class SamplingManager {
     );
   }
 
-  /// Process all collected values, calculate average, and notify
   void _processSample() {
-    if (_selectedSensorName == null || _collectedValues.isEmpty) return;
+    if (_collectedValuesBySensor.isEmpty) {
+      return;
+    }
 
-    // Calculate average over ALL values collected in this interval
-    final values = List<double>.from(_collectedValues);
-    final average = values.reduce((a, b) => a + b) / values.length;
+    final sampledValues = <SampledValue>[];
+    final timestamp = DateTime.now();
 
-    final sampledValue = SampledValue(
-      timestamp: DateTime.now(),
-      value: average,
-      sampleCount: values.length,
-    );
+    for (final entry in _collectedValuesBySensor.entries) {
+      final sensorName = entry.key;
+      final values = entry.value;
 
-    // Clear collected values for next interval
-    _collectedValues.clear();
+      if (values.isEmpty) {
+        continue;
+      }
 
-    onSampleReady(_selectedSensorName!, _currentSensorUnit ?? '', sampledValue);
+      final average = values.reduce((a, b) => a + b) / values.length;
+
+      final sampledValue = SampledValue(
+        dataStream: sensorName,
+        dataUnit: _sensorUnits[sensorName] ?? '',
+        timestamp: timestamp,
+        value: average,
+        sampleCount: values.length,
+      );
+
+      sampledValues.add(sampledValue);
+    }
+
+    _collectedValuesBySensor.clear();
+
+    if (sampledValues.isNotEmpty) {
+      onSampleReady(sampledValues);
+    }
   }
 
-  String? get selectedSensorName => _selectedSensorName;
-
   void clear() {
-    _collectedValues.clear();
-    _currentSensorUnit = null;
+    _collectedValuesBySensor.clear();
+    _sensorUnits.clear();
   }
 
   void dispose() {
