@@ -250,7 +250,6 @@ class _GraphSectionState extends State<GraphSection> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.center,

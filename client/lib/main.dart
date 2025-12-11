@@ -1,8 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:sensor_data_app/theme/app_theme.dart';
 import 'views/home_page.dart';
+import 'package:window_size/window_size.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    setWindowTitle('Sensor Dash');
+    setWindowMinSize(const Size(1200, 900));
+  }
+
   runApp(const MyApp());
 }
 
