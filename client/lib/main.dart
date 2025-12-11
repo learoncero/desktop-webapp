@@ -24,6 +24,11 @@ class MyApp extends StatefulWidget {
   static void setThemeMode(BuildContext context, ThemeMode mode) {
     context.findAncestorStateOfType<_MyAppState>()?.setThemeMode(mode);
   }
+
+  static ThemeMode getThemeMode(BuildContext context) {
+    return context.findAncestorStateOfType<_MyAppState>()?._themeMode ??
+        ThemeMode.system;
+  }
 }
 
 class _MyAppState extends State<MyApp> {

@@ -8,11 +8,13 @@ class LineChartGraph extends StatelessWidget {
     required this.spots,
     required this.displayMax,
     required this.sensorUnit,
+    required this.visibleRange,
   });
 
   final List<FlSpot> spots;
   final int displayMax;
   final String? sensorUnit;
+  final int visibleRange;
 
   Widget bottomTitleWidgets(double value, TitleMeta meta, double chartWidth) {
     if (value % 1 != 0) {
@@ -37,6 +39,15 @@ class LineChartGraph extends StatelessWidget {
       space: 16,
       child: Text(meta.formattedValue, style: style),
     );
+  }
+
+  double _calculateInterval() {
+    if (visibleRange <= 10) return 1.0;
+    if (visibleRange <= 30) return 2.0;
+    if (visibleRange <= 60) return 5.0;
+    if (visibleRange <= 120) return 10.0;
+    if (visibleRange <= 180) return 20.0;
+    return 20.0; // For 180+ seconds, use 1 minute intervals
   }
 
   @override
@@ -117,7 +128,7 @@ class LineChartGraph extends StatelessWidget {
                     getTitlesWidget: (value, meta) =>
                         bottomTitleWidgets(value, meta, constraints.maxWidth),
                     reservedSize: 36,
-                    interval: 1,
+                    interval: _calculateInterval(),
                   ),
                   drawBelowEverything: true,
                 ),
@@ -129,8 +140,8 @@ class LineChartGraph extends StatelessWidget {
                 show: true,
                 drawHorizontalLine: true,
                 drawVerticalLine: true,
-                horizontalInterval: 1,
-                verticalInterval: 1,
+                horizontalInterval: _calculateInterval(),
+                verticalInterval: _calculateInterval(),
                 getDrawingHorizontalLine: (_) => FlLine(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   dashArray: [5, 5],

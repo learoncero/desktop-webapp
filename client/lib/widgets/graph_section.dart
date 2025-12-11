@@ -88,6 +88,7 @@ class _GraphSectionState extends State<GraphSection> {
                           widget.viewModel.visibleStart.toInt() +
                           widget.viewModel.visibleRange.toInt(),
                       sensorUnit: widget.viewModel.currentSensorUnit,
+                      visibleRange: widget.viewModel.visibleRange.toInt(),
                     );
                   },
                 ),

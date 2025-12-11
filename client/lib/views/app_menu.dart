@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:menu_bar/menu_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../main.dart';
+import '../viewmodels/serial_connection_viewmodel.dart';
+import '../widgets/settings_dialog.dart';
 
-class AppMenu extends StatefulWidget {
-  const AppMenu({super.key});
+class AppMenu extends StatelessWidget {
+  final ThemeMode currentThemeMode;
+  final SerialConnectionViewModel? viewModel;
 
-  @override
-  State<AppMenu> createState() => _AppMenuState();
-}
-
-class _AppMenuState extends State<AppMenu> {
-  ThemeMode _currentThemeMode = ThemeMode.system;
+  const AppMenu({
+    super.key,
+    required this.currentThemeMode,
+    this.viewModel,
+  });
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -31,20 +32,16 @@ class _AppMenuState extends State<AppMenu> {
     );
   }
 
-  void _toggleTheme() {
-    setState(() {
-      if (_currentThemeMode == ThemeMode.light) {
-        _currentThemeMode = ThemeMode.dark;
-      } else if (_currentThemeMode == ThemeMode.dark) {
-        _currentThemeMode = ThemeMode.light;
-      } else {
-        final brightness = MediaQuery.of(context).platformBrightness;
-        _currentThemeMode = brightness == Brightness.dark
-            ? ThemeMode.light
-            : ThemeMode.dark;
-      }
-    });
-    MyApp.setThemeMode(context, _currentThemeMode);
+  Future<void> _showSettings(BuildContext context) async {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return SettingsDialog(
+          currentThemeMode: currentThemeMode,
+          viewModel: viewModel,
+        );
+      },
+    );
   }
 
   @override
@@ -79,14 +76,9 @@ class _AppMenuState extends State<AppMenu> {
                 submenu: SubMenu(
                   menuItems: [
                     MenuButton(
-                      text: const Text("Switch Theme"),
-                      onTap: _toggleTheme,
-                    ),
-                    const MenuDivider(),
-                    MenuButton(
                       text: const Text("Settings"),
                       onTap: () {
-                        // Handle settings action
+                        _showSettings(context);
                       },
                     ),
                   ],
