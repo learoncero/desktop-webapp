@@ -41,13 +41,18 @@ class LineChartGraph extends StatelessWidget {
     );
   }
 
-  double _calculateInterval() {
+  double _calculateIntervalX() {
     if (visibleRange <= 10) return 1.0;
     if (visibleRange <= 30) return 2.0;
     if (visibleRange <= 60) return 5.0;
     if (visibleRange <= 120) return 10.0;
     if (visibleRange <= 180) return 20.0;
     return 20.0; // For 180+ seconds, use 1 minute intervals
+  }
+
+  double _calculateIntervalY(double minY, double maxY) {
+    double val = (maxY - minY) / 10;
+    return val;
   }
 
   @override
@@ -64,6 +69,9 @@ class LineChartGraph extends StatelessWidget {
 
     final double minY = minYValue - padding;
     final double maxY = maxYValue + padding;
+
+    final intervalX = _calculateIntervalX();
+    final intervalY = _calculateIntervalY(minY, maxY);
 
     return Padding(
       padding: const EdgeInsets.only(left: 12, bottom: 12, right: 20, top: 20),
@@ -86,7 +94,7 @@ class LineChartGraph extends StatelessWidget {
                         fontSize: 14,
                       );
                       return LineTooltipItem(
-                        '${touchedSpot.x.toInt()}s, ${touchedSpot.y.toStringAsFixed(2)} $sensorUnit',
+                        '${touchedSpot.x.toInt()}s, ${touchedSpot.y.toStringAsFixed(2)}$sensorUnit',
                         textStyle,
                       );
                     }).toList();
@@ -116,6 +124,7 @@ class LineChartGraph extends StatelessWidget {
                     getTitlesWidget: (value, meta) =>
                         leftTitleWidgets(value, meta, constraints.maxWidth),
                     reservedSize: 56,
+                    interval: intervalY,
                   ),
                   drawBelowEverything: true,
                 ),
@@ -128,7 +137,7 @@ class LineChartGraph extends StatelessWidget {
                     getTitlesWidget: (value, meta) =>
                         bottomTitleWidgets(value, meta, constraints.maxWidth),
                     reservedSize: 36,
-                    interval: _calculateInterval(),
+                    interval: intervalX,
                   ),
                   drawBelowEverything: true,
                 ),
@@ -140,8 +149,8 @@ class LineChartGraph extends StatelessWidget {
                 show: true,
                 drawHorizontalLine: true,
                 drawVerticalLine: true,
-                horizontalInterval: _calculateInterval(),
-                verticalInterval: _calculateInterval(),
+                verticalInterval: intervalX,
+                horizontalInterval: intervalY,
                 getDrawingHorizontalLine: (_) => FlLine(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   dashArray: [5, 5],
