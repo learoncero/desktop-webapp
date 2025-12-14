@@ -20,15 +20,19 @@ class _GraphSectionState extends State<GraphSection> {
     try {
       String? folderPath;
 
-      // Prefer file_picker on desktop platforms because it's more reliable for folder picking.
       if (Theme.of(context).platform == TargetPlatform.windows ||
           Theme.of(context).platform == TargetPlatform.macOS ||
           Theme.of(context).platform == TargetPlatform.linux) {
-        folderPath = await FilePicker.platform.getDirectoryPath();
+        try {
+          folderPath = await FilePicker.platform.getDirectoryPath();
+        } catch (e) {
+          debugPrint('FilePicker failed, falling back to file_selector: $e');
+          folderPath = await getDirectoryPath();
+        }
+      } else {
+        // Non-desktop platforms: use file_selector directly
+        folderPath = await getDirectoryPath();
       }
-
-      // Fallback to file_selector if running on other platforms or if file_picker returned null.
-      folderPath ??= await getDirectoryPath();
 
       if (!mounted) return;
 
