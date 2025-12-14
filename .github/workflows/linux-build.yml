@@ -40,7 +40,7 @@ jobs:
         working-directory: client
         
       - name: Create Debian package
-        if: startsWith(github.ref, 'refs/tags/'))
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           APP_NAME=desktop-webapp
           VERSION=${GITHUB_REF_NAME#v}
