@@ -12,10 +12,15 @@ import 'package:sensor_data_app/services/csv_recorder.dart';
 import 'package:sensor_data_app/models/sensor_packet.dart';
 
 class SerialConnectionViewModel extends ChangeNotifier {
-  final SerialSource Function(String port, int baud, {bool simulate}) _serialFactory;
+  final SerialSource Function(String port, int baud, {bool simulate})
+  _serialFactory;
 
-  SerialConnectionViewModel({SerialSource Function(String, int, {bool simulate})? serialFactory})
-      : _serialFactory = serialFactory ?? ((p, b, {simulate = false}) => SerialSource(p, b, simulate: simulate)) {
+  SerialConnectionViewModel({
+    SerialSource Function(String, int, {bool simulate})? serialFactory,
+  }) : _serialFactory =
+           serialFactory ??
+           ((p, b, {simulate = false}) =>
+               SerialSource(p, b, simulate: simulate)) {
     // Initialize a cross-platform default save folder (user can still change it)
     _initDefaultSaveFolder();
   }
@@ -25,6 +30,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   int _selectedBaudrate = 115200;
   bool _isConnected = false;
   bool _isSimulated = false;
+  bool _isRecording = false;
   SerialSource? _serial;
   String? _errorMessage;
 
@@ -34,7 +40,8 @@ class SerialConnectionViewModel extends ChangeNotifier {
   CsvRecorder? _recorder;
 
   // Packet broadcast stream
-  final StreamController<SensorPacket> _packetController = StreamController<SensorPacket>.broadcast();
+  final StreamController<SensorPacket> _packetController =
+      StreamController<SensorPacket>.broadcast();
 
   // Sampling state
   SamplingManager? _samplingManager;
@@ -73,6 +80,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   int get selectedBaudrate => _selectedBaudrate;
   bool get isConnected => _isConnected;
   bool get isSimulated => _isSimulated;
+  bool get isRecording => _isRecording;
   SensorPacket? get lastPacket => _lastPacket;
   String? get errorMessage => _errorMessage;
   String? get saveFolderPath => _saveFolderPath;
@@ -130,7 +138,39 @@ class SerialConnectionViewModel extends ChangeNotifier {
     _maybeStartRecorder();
   }
 
-  Future<String?> connect({bool allowSimulationIfNoDevice = false, bool forceSimulate = false}) async {
+  void startRecording() {
+    if (!_isConnected) return;
+
+    // Reset graph for new recording session
+    _graphPoints.clear();
+    _graphIndex = 0;
+    _visibleStart = 0;
+    _graphStartTime = "";
+    _graphSliding = false;
+
+    _isRecording = true;
+    _maybeStartRecorder(); // Start CSV recording
+    notifyListeners();
+  }
+
+  void stopRecording() {
+    _isRecording = false;
+    _stopRecorder(); // Stop CSV recording
+    notifyListeners();
+  }
+
+  void toggleRecording() {
+    if (_isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
+  Future<String?> connect({
+    bool allowSimulationIfNoDevice = false,
+    bool forceSimulate = false,
+  }) async {
     if (_selectedPort == null) {
       _errorMessage = 'Please select a port first';
       notifyListeners();
@@ -143,7 +183,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
     try {
       if (forceSimulate) {
-        _serial = _serialFactory(_selectedPort!, _selectedBaudrate, simulate: true);
+        _serial = _serialFactory(
+          _selectedPort!,
+          _selectedBaudrate,
+          simulate: true,
+        );
         _isSimulated = true;
         final simSuccess = _serial!.connect(
           onPacket: (packet) {
@@ -202,7 +246,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
       }
 
       // First try real serial (the factory may still return a simulated instance in tests)
-      _serial = _serialFactory(_selectedPort!, _selectedBaudrate, simulate: false);
+      _serial = _serialFactory(
+        _selectedPort!,
+        _selectedBaudrate,
+        simulate: false,
+      );
       _isSimulated = _serial?.simulate ?? false;
 
       var success = _serial!.connect(
@@ -215,11 +263,10 @@ class SerialConnectionViewModel extends ChangeNotifier {
             _packetController.add(packet);
           } catch (_) {}
 
-          // Track available sensors from packet
           final sensorNames = packet.payload.map((s) => s.displayName).toList();
           if (_availableSensors.isEmpty) {
             _availableSensors = sensorNames;
-            // Auto-select first sensor if none selected
+
             if (_selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               _selectedSensorForPlot = sensorNames.first;
             }
@@ -245,7 +292,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
       if (!success && allowSimulationIfNoDevice) {
         // Try simulation fallback via injected factory
-        _serial = _serialFactory(_selectedPort!, _selectedBaudrate, simulate: true);
+        _serial = _serialFactory(
+          _selectedPort!,
+          _selectedBaudrate,
+          simulate: true,
+        );
         _isSimulated = _serial?.simulate ?? true;
         success = _serial!.connect(
           onPacket: (packet) {
@@ -306,7 +357,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
     } catch (e) {
       // If any unexpected exception, try simulation if allowed
       if (allowSimulationIfNoDevice) {
-        _serial = _serialFactory(_selectedPort!, _selectedBaudrate, simulate: true);
+        _serial = _serialFactory(
+          _selectedPort!,
+          _selectedBaudrate,
+          simulate: true,
+        );
         _isSimulated = _serial?.simulate ?? true;
         final simSuccess = _serial!.connect(
           onPacket: (packet) {
@@ -369,6 +424,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
   }
 
   void addSampleToGraph(double value) {
+    if (!_isRecording) return; // Only plot when recording
     graphPoints.add(FlSpot(_graphIndex.toDouble(), value));
     _graphIndex++;
     if (!_graphSliding) {
@@ -406,6 +462,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
     _samplingManager = null;
     _isConnected = false;
     _isSimulated = false;
+    _isRecording = false;
     _lastPacket = null;
 
     // Stop recorder if running
@@ -430,8 +487,8 @@ class SerialConnectionViewModel extends ChangeNotifier {
   }
 
   void _maybeStartRecorder() {
-    // Stop existing if no folder or not connected
-    if (!_isConnected || _saveFolderPath == null) {
+    // Stop existing if no folder, not connected, or not recording
+    if (!_isConnected || _saveFolderPath == null || !_isRecording) {
       _stopRecorder();
       return;
     }
@@ -462,7 +519,8 @@ class SerialConnectionViewModel extends ChangeNotifier {
     String? home;
     try {
       if (Platform.isWindows) {
-        home = Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'];
+        home =
+            Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'];
       } else {
         home = Platform.environment['HOME'];
       }

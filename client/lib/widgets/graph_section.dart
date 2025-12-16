@@ -14,8 +14,6 @@ class GraphSection extends StatefulWidget {
 }
 
 class _GraphSectionState extends State<GraphSection> {
-  bool isRecording = true;
-
   Future<void> _pickFolder(SerialConnectionViewModel vm) async {
     try {
       String? folderPath;
@@ -152,7 +150,8 @@ class _GraphSectionState extends State<GraphSection> {
                                   },
                           ),
                           // Show current value if available
-                          if (widget.viewModel.currentSample != null) ...[
+                          if ((widget.viewModel.currentSample != null) &&
+                              (widget.viewModel.isRecording)) ...[
                             const SizedBox(width: 12),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -264,27 +263,22 @@ class _GraphSectionState extends State<GraphSection> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(40),
-                  onTap: () {
-                    setState(() {
-                      isRecording = !isRecording;
-                    });
-                    // Placeholder: start/stop logic goes here
-                  },
+                  onTap: vm.isConnected ? vm.toggleRecording : null,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 70,
                     height: 70,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: isRecording ? Colors.red : Colors.transparent,
+                      color: vm.isRecording ? Colors.red : Colors.transparent,
                       shape: BoxShape.circle,
-                      border: isRecording
+                      border: vm.isRecording
                           ? null
                           : Border.all(color: Colors.red, width: 4),
-                      boxShadow: isRecording
+                      boxShadow: vm.isRecording
                           ? [
                               BoxShadow(
-                                color: const Color.fromRGBO(255, 0, 0, 0.5),
+                                color: Colors.red.withValues(alpha: 0.6),
                                 blurRadius: 7,
                                 spreadRadius: 3,
                               ),
@@ -294,7 +288,11 @@ class _GraphSectionState extends State<GraphSection> {
                     child: Text(
                       "REC",
                       style: TextStyle(
-                        color: isRecording ? Colors.white : Colors.red,
+                        color: vm.isRecording
+                            ? Colors.white
+                            : vm.isConnected
+                            ? Colors.red
+                            : Colors.grey,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

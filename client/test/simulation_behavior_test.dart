@@ -65,6 +65,8 @@ void main() {
       expect(err, isNull);
       expect(vm.isSimulated, isTrue);
 
+      vm.startRecording();
+
       // Wait a bit for some packets and recording
       await Future.delayed(const Duration(seconds: 3));
       vm.disconnect();
