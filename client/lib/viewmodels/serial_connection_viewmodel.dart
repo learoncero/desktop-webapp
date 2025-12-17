@@ -205,35 +205,35 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
           // Initialize sampling manager (samples every 1 second)
           _samplingManager = SamplingManager(
-              onSampleReady: (samples) {
-                _currentSamples = samples;
+            onSampleReady: (samples) async {
+              _currentSamples = samples;
 
-          for (var sample in samples) {
-            addSampleToGraph(sample.dataStream, sample.value);
-            // Only add the selected sensor to the graph
-            if (sample.dataStream == _selectedSensorForPlot) {
-              _currentSensorUnit = sample.dataUnit;
+              for (var sample in samples) {
+                // Add sample to graph if recording
+                if (sample.dataStream == _selectedSensorForPlot) {
+                  addSampleToGraph(sample.dataStream, sample.value);
+                  _currentSensorUnit = sample.dataUnit;
 
-              if (_graphStartTime.isEmpty) {
-                _graphStartTime =
-                    "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                    "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
-              }
-            }
-          }
-          _graphIndex++;
+                  if (_graphStartTime.isEmpty) {
+                    _graphStartTime =
+                        "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                        "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+                  }
+                }
 
                 // Forward sample to recorder if recording
                 try {
-                  if (_recorder != null) {
-                    await _recorder!.recordSample(sensorName, unit, sample);
+                  if (_recorder != null && _isRecording) {
+                    await _recorder!.recordSample(sample.dataStream, sample.dataUnit, sample);
                   }
                 } catch (e) {
                   // ignore recording errors for now
                 }
+              }
 
-                notifyListeners();
-              },
+              _graphIndex++;
+              notifyListeners();
+            },
           );
 
           _maybeStartRecorder();
@@ -321,29 +321,33 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
         // Initialize sampling manager (samples every 1 second)
         _samplingManager = SamplingManager(
-                onSampleReady: (samples) {
-                _currentSamples = samples;
+          onSampleReady: (samples) async {
+            _currentSamples = samples;
 
-                for (var sample in samples) {
-                // Only add the selected sensor to the graph
-                if (sample.dataStream == _selectedSensorForPlot) {
-                addSampleToGraph(sample.value);
+            for (var sample in samples) {
+              // Only add the selected sensor to the graph
+              if (sample.dataStream == _selectedSensorForPlot) {
+                addSampleToGraph(sample.dataStream, sample.value);
                 _currentSensorUnit = sample.dataUnit;
 
                 if (_graphStartTime.isEmpty) {
-                _graphStartTime =
-                "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
-
-            // Forward sample to recorder if recording
-            try {
-              if (_recorder != null) {
-                await _recorder!.recordSample(sensorName, unit, sample);
+                  _graphStartTime =
+                      "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                      "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+                }
               }
-            } catch (e) {
-              // ignore recording errors for now
+
+              // Forward sample to recorder if recording
+              try {
+                if (_recorder != null && _isRecording) {
+                  await _recorder!.recordSample(sample.dataStream, sample.dataUnit, sample);
+                }
+              } catch (e) {
+                // ignore recording errors for now
+              }
             }
 
+            _graphIndex++;
             notifyListeners();
           },
         );
@@ -386,24 +390,27 @@ class SerialConnectionViewModel extends ChangeNotifier {
           _errorMessage = null;
           notifyListeners();
 
-                // Initialize sampling manager (samples every 1 second)
-                _samplingManager = SamplingManager(
-                onSampleReady: (samples) {
-                _currentSamples = samples;
+          // Initialize sampling manager (samples every 1 second)
+          _samplingManager = SamplingManager(
+            onSampleReady: (samples) async {
+              _currentSamples = samples;
 
-                for (var sample in samples) {
+              for (var sample in samples) {
                 // Only add the selected sensor to the graph
                 if (sample.dataStream == _selectedSensorForPlot) {
-                addSampleToGraph(sample.value);
-
-              try {
-                if (_recorder != null) {
-                  await _recorder!.recordSample(sensorName, unit, sample);
+                  addSampleToGraph(sample.dataStream, sample.value);
                 }
-              } catch (e) {
-                // ignore recording errors for now
+
+                try {
+                  if (_recorder != null && _isRecording) {
+                    await _recorder!.recordSample(sample.dataStream, sample.dataUnit, sample);
+                  }
+                } catch (e) {
+                  // ignore recording errors for now
+                }
               }
 
+              _graphIndex++;
               notifyListeners();
             },
           );
