@@ -60,7 +60,6 @@ class SamplingManager {
         dataUnit: _sensorUnits[sensorName] ?? '',
         timestamp: timestamp,
         value: average,
-        sampleCount: values.length,
       );
 
       sampledValues.add(sampledValue);

@@ -68,20 +68,23 @@ void main() {
         reason: 'CSV must contain at least one data row',
       );
 
-      // Validate first few lines have 5 comma-separated fields
-      for (var i = 0; i < lines.length && i < 5; i++) {
+      // Validate first few lines have 4 comma-separated fields
+      for (var i = 0; i < lines.length && i < 4; i++) {
         final line = lines[i];
         final parts = line.split(',');
         expect(
           parts.length,
-          equals(5),
-          reason: 'Each CSV row should have 5 comma-separated fields',
+          equals(4),
+          reason: 'Each CSV row should have 4 comma-separated fields',
         );
 
         // Ensure fields are quoted
         for (final ppart in parts) {
-          expect(ppart.startsWith('"') && ppart.endsWith('"'), isTrue,
-              reason: 'Each field should be quoted');
+          expect(
+            ppart.startsWith('"') && ppart.endsWith('"'),
+            isTrue,
+            reason: 'Each field should be quoted',
+          );
         }
 
         // Check sensor name (2nd field) is not empty

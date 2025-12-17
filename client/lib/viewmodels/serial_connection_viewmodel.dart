@@ -210,15 +210,13 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
               for (var sample in samples) {
                 // Add sample to graph if recording
-                if (sample.dataStream == _selectedSensorForPlot) {
-                  addSampleToGraph(sample.dataStream, sample.value);
-                  _currentSensorUnit = sample.dataUnit;
+                addSampleToGraph(sample.dataStream, sample.value);
+                _currentSensorUnit = sample.dataUnit;
 
-                  if (_graphStartTime.isEmpty && _isRecording) {
-                    _graphStartTime =
-                        "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                        "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
-                  }
+                if (_graphStartTime.isEmpty && _isRecording) {
+                  _graphStartTime =
+                      "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                      "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
                 }
 
                 // Forward sample to recorder if recording
@@ -235,7 +233,9 @@ class SerialConnectionViewModel extends ChangeNotifier {
                 }
               }
 
-              _graphIndex++;
+              if (_recorder != null && _isRecording) {
+                _graphIndex++;
+              }
               notifyListeners();
             },
           );
@@ -330,15 +330,13 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
             for (var sample in samples) {
               // Only add the selected sensor to the graph
-              if (sample.dataStream == _selectedSensorForPlot) {
-                addSampleToGraph(sample.dataStream, sample.value);
-                _currentSensorUnit = sample.dataUnit;
+              addSampleToGraph(sample.dataStream, sample.value);
+              _currentSensorUnit = sample.dataUnit;
 
-                if (_graphStartTime.isEmpty && _isRecording) {
-                  _graphStartTime =
-                      "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                      "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
-                }
+              if (_graphStartTime.isEmpty && _isRecording) {
+                _graphStartTime =
+                    "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
+                    "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}";
               }
 
               // Forward sample to recorder if recording
@@ -355,7 +353,9 @@ class SerialConnectionViewModel extends ChangeNotifier {
               }
             }
 
-            _graphIndex++;
+            if (_recorder != null && _isRecording) {
+              _graphIndex++;
+            }
             notifyListeners();
           },
         );
@@ -405,9 +405,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
               for (var sample in samples) {
                 // Only add the selected sensor to the graph
-                if (sample.dataStream == _selectedSensorForPlot) {
-                  addSampleToGraph(sample.dataStream, sample.value);
-                }
+                addSampleToGraph(sample.dataStream, sample.value);
 
                 try {
                   if (_recorder != null && _isRecording) {
@@ -422,7 +420,9 @@ class SerialConnectionViewModel extends ChangeNotifier {
                 }
               }
 
-              _graphIndex++;
+              if (_recorder != null && _isRecording) {
+                _graphIndex++;
+              }
               notifyListeners();
             },
           );

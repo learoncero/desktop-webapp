@@ -58,7 +58,6 @@ class CsvRecorder {
     values.add(sensorName);
     values.add(unit);
     values.add(sample.value.toString());
-    values.add(sample.sampleCount.toString());
 
     final escaped = values.map((v) => '"${v.replaceAll('"', '""')}"').join(',');
     _sink!.writeln(escaped);

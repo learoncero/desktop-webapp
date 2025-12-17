@@ -128,7 +128,7 @@ class _GraphSectionState extends State<GraphSection> {
                           DropdownButton<String>(
                             value: selectedSensor,
                             hint: Text(
-                              'Not recording',
+                              'Not connected',
                               style: TextStyle(
                                 color: Theme.of(
                                   context,
@@ -143,9 +143,7 @@ class _GraphSectionState extends State<GraphSection> {
                                       child: Text(sensor),
                                     );
                                   }).toList(),
-                            onChanged:
-                                (availableSensors.isEmpty ||
-                                    widget.viewModel.isRecording)
+                            onChanged: availableSensors.isEmpty
                                 ? null
                                 : (newSensor) {
                                     if (newSensor != null) {
