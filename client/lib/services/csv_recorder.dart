@@ -12,7 +12,6 @@ class CsvRecorder {
 
   IOSink? _sink;
   File? _file;
-  String? _currentSensorColumnLabel;
   bool _started = false;
 
   CsvRecorder({required this.folderPath, String? baseFileName})
@@ -23,6 +22,7 @@ class CsvRecorder {
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
+
     _started = true;
   }
 
@@ -34,7 +34,6 @@ class CsvRecorder {
     } catch (_) {}
     _sink = null;
     _file = null;
-    _currentSensorColumnLabel = null;
   }
 
   /// Record a prepared sample into the CSV. This method is safe to call even
@@ -50,18 +49,14 @@ class CsvRecorder {
       await start();
     }
 
-    final columnLabel = '$sensorName [$unit]';
-
-    // If sensor/unit changed (or no file yet), rotate file
-    if (_sink == null ||
-        _currentSensorColumnLabel == null ||
-        _currentSensorColumnLabel != columnLabel) {
-      await _rotateFileWithHeader(columnLabel, sample.timestamp);
-    }
+    // Ensure the output file/sink exists.
+    await _ensureFileOpen(sample.timestamp);
 
     final unix = sample.timestamp.millisecondsSinceEpoch ~/ 1000;
     final values = <String>[];
     values.add(unix.toString());
+    values.add(sensorName);
+    values.add(unit);
     values.add(sample.value.toString());
     values.add(sample.sampleCount.toString());
 
@@ -70,23 +65,13 @@ class CsvRecorder {
     await _sink!.flush();
   }
 
-  Future<void> _rotateFileWithHeader(String sensorColumn, DateTime now) async {
-    try {
-      await _sink?.flush();
-      await _sink?.close();
-    } catch (_) {}
+  Future<void> _ensureFileOpen(DateTime now) async {
+    if (_sink != null) return;
 
     final timestamp = _formatDate(now);
     final filename = '${baseFileName}_$timestamp.csv';
     _file = File(p.join(folderPath, filename));
     _sink = _file!.openWrite(mode: FileMode.write);
-
-    _currentSensorColumnLabel = sensorColumn;
-
-    final header = ['timestamp', sensorColumn, 'sampleCount'];
-    final escaped = header.map((c) => '"${c.replaceAll('"', '""')}"').join(',');
-    _sink!.writeln(escaped);
-    await _sink!.flush();
   }
 
   String _formatDate(DateTime dt) {
