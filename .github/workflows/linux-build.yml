@@ -75,7 +75,7 @@ jobs:
           Categories=Utility;
           EOF
 
-          cp client/assets/images/icon.png \
+          cp client/linux/icons/icon.png \
              $PKG_DIR/usr/share/icons/hicolor/1024x1024/apps/$APP_ID.png
 
           cat <<EOF > $PKG_DIR/DEBIAN/control
