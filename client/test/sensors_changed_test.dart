@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
-import 'package:sensor_data_app/viewmodels/serial_connection_viewmodel.dart';
-import 'package:sensor_data_app/services/serial_source.dart';
-import 'package:sensor_data_app/models/sensor_packet.dart';
+import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/services/serial_source.dart';
+import 'package:sensor_dash/models/sensor_packet.dart';
 
 // Fake serial source that allows the test to push packets manually.
 class FakeSerialSource extends SerialSource {
