@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:menu_bar/menu_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../viewmodels/serial_connection_viewmodel.dart';
@@ -8,11 +11,7 @@ class AppMenu extends StatelessWidget {
   final ThemeMode currentThemeMode;
   final SerialConnectionViewModel? viewModel;
 
-  const AppMenu({
-    super.key,
-    required this.currentThemeMode,
-    this.viewModel,
-  });
+  const AppMenu({super.key, required this.currentThemeMode, this.viewModel});
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -65,7 +64,9 @@ class AppMenu extends StatelessWidget {
                     MenuButton(
                       text: const Text("Exit"),
                       onTap: () {
-                        // Handle exit action
+                        ServicesBinding.instance.exitApplication(
+                          AppExitType.required,
+                        );
                       },
                     ),
                   ],

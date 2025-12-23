@@ -9,7 +9,7 @@ class FakeSerialSource extends SerialSource {
   late PacketCallback _onPacket;
   bool _connected = false;
 
-  FakeSerialSource(String portName, int baudRate, {bool simulate = false}) : super(portName, baudRate, simulate: simulate);
+  FakeSerialSource(super.portName, super.baudRate, {super.simulate});
 
   @override
   bool connect({required PacketCallback onPacket, ErrorCallback? onError}) {
@@ -77,7 +77,11 @@ void main() {
         payload: [
           SensorData(displayName: 'Temperature', displayUnit: '°C', data: 22.0),
           SensorData(displayName: 'Humidity', displayUnit: '%', data: 49.0),
-          SensorData(displayName: 'Accelerometer', displayUnit: 'g', data: 0.12),
+          SensorData(
+            displayName: 'Accelerometer',
+            displayUnit: 'g',
+            data: 0.12,
+          ),
         ],
       );
 
@@ -89,7 +93,8 @@ void main() {
       expect(
         vm.errorMessage,
         equals('Input sensors changed during recording: Accelerometer'),
-        reason: 'ViewModel should set error when new sensor appears during recording',
+        reason:
+            'ViewModel should set error when new sensor appears during recording',
       );
 
       try {
@@ -99,4 +104,3 @@ void main() {
     timeout: Timeout(Duration(seconds: 20)),
   );
 }
-
