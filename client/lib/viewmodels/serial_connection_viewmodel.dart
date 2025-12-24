@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'package:sensor_dash/services/csv_recorder.dart';
+import 'package:sensor_dash/services/csv_loader.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 
 class SerialConnectionViewModel extends ChangeNotifier {
@@ -38,6 +39,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
   String? _saveFolderPath;
   CsvRecorder? _recorder;
+  final CsvLoader _csvLoader = CsvLoader();
+
+  // CSV playback state
+  bool _isCsvMode = false;
+  String? _loadedCsvPath;
 
   // Packet broadcast stream
   final StreamController<SensorPacket> _packetController =
@@ -84,6 +90,8 @@ class SerialConnectionViewModel extends ChangeNotifier {
   SensorPacket? get lastPacket => _lastPacket;
   String? get errorMessage => _errorMessage;
   String? get saveFolderPath => _saveFolderPath;
+  bool get isCsvMode => _isCsvMode;
+  String? get loadedCsvPath => _loadedCsvPath;
 
   Stream<SensorPacket> get packetStream => _packetController.stream;
   String? get selectedSensorForPlot => _selectedSensorForPlot;
@@ -118,9 +126,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
   }
 
   void selectSensorForPlot(String sensorName) {
-    if (!_isConnected || !_availableSensors.contains(sensorName)) return;
-    _selectedSensorForPlot = sensorName;
-    notifyListeners();
+    if ((isCsvMode && _availableSensors.contains(sensorName)) ||
+        (_isConnected && _availableSensors.contains(sensorName))) {
+      _selectedSensorForPlot = sensorName;
+      notifyListeners();
+    }
   }
 
   /// Set the save folder path. If null, recording will stop.
@@ -136,11 +146,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
     if (!_isConnected) return;
 
     // Reset graph for new recording session
-    _graphPoints.clear();
-    _graphIndex = 0;
-    _visibleStart = 0;
-    _graphStartTime = "";
-    _graphSliding = false;
+    _resetGraphState();
 
     _isRecording = true;
     _maybeStartRecorder(); // Start CSV recording
@@ -234,7 +240,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
               }
 
               if (_recorder != null && _isRecording) {
-                _graphIndex++;
+                _graphIndex += 1;
               }
               notifyListeners();
             },
@@ -360,7 +366,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
             }
 
             if (_recorder != null && _isRecording) {
-              _graphIndex++;
+              _graphIndex += 1;
             }
             notifyListeners();
           },
@@ -427,7 +433,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
               }
 
               if (_recorder != null && _isRecording) {
-                _graphIndex++;
+                _graphIndex += 1;
               }
               notifyListeners();
             },
@@ -507,13 +513,7 @@ class SerialConnectionViewModel extends ChangeNotifier {
     // Stop recorder if running
     _stopRecorder();
 
-    _selectedSensorForPlot = null;
-    _currentSensorUnit = null;
-    _availableSensors = [];
-    _graphIndex = 0;
-    _visibleStart = 0;
-    graphPoints.clear();
-    _graphStartTime = "";
+    _resetGraphState();
 
     notifyListeners();
   }
@@ -536,10 +536,14 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
     try {
       // Create recorder with a callback that sets an error message if sensors change
-      _recorder = CsvRecorder(folderPath: _saveFolderPath!, onSensorsChanged: (newSensors) {
-        _errorMessage = 'Input sensors changed during recording: ${newSensors.join(', ')}';
-        notifyListeners();
-      });
+      _recorder = CsvRecorder(
+        folderPath: _saveFolderPath!,
+        onSensorsChanged: (newSensors) {
+          _errorMessage =
+              'Input sensors changed during recording: ${newSensors.join(', ')}';
+          notifyListeners();
+        },
+      );
       _recorder!.start();
     } catch (e) {
       _errorMessage = 'Failed to start recorder: $e';
@@ -552,6 +556,20 @@ class SerialConnectionViewModel extends ChangeNotifier {
       _recorder?.stop();
     } catch (_) {}
     _recorder = null;
+  }
+
+  void _resetGraphState({bool resetVisibleRange = false}) {
+    _graphPoints.clear();
+    _graphIndex = 0;
+    _visibleStart = 0;
+    _graphStartTime = "";
+    _graphSliding = false;
+    _availableSensors = [];
+    _selectedSensorForPlot = null;
+    _currentSensorUnit = null;
+    if (resetVisibleRange) {
+      _visibleRange = 60;
+    }
   }
 
   void _initDefaultSaveFolder() {
@@ -584,6 +602,95 @@ class SerialConnectionViewModel extends ChangeNotifier {
     } catch (_) {
       // ignore errors silently; leave _saveFolderPath null
     }
+  }
+
+  /// Load and display a CSV file
+  /// This will disconnect from serial (if connected) and enter CSV playback mode
+  Future<String?> loadCsvFile(String filePath) async {
+    try {
+      if (_isConnected) {
+        disconnect();
+      }
+
+      // Reset state
+      _resetGraphState();
+
+      // Load CSV file
+      final packets = await _csvLoader.loadCsvFile(filePath);
+
+      if (packets.isEmpty) {
+        _errorMessage = 'CSV file contains no valid data';
+        notifyListeners();
+        return _errorMessage;
+      }
+
+      // Extract available sensors from first packet
+      final firstPacket = packets.first;
+      _availableSensors = firstPacket.payload
+          .map((s) => s.displayName)
+          .toList();
+
+      if (_availableSensors.isNotEmpty) {
+        _selectedSensorForPlot = _availableSensors.first;
+      }
+
+      // Set graph start time
+      _graphStartTime =
+          "${firstPacket.timestamp.toLocal().day.toString().padLeft(2, '0')}.${firstPacket.timestamp.toLocal().month.toString().padLeft(2, '0')}.${firstPacket.timestamp.toLocal().year} "
+          "${firstPacket.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${firstPacket.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${firstPacket.timestamp.toLocal().second.toString().padLeft(2, '0')}";
+
+      // Convert packets to graph points
+      for (final packet in packets) {
+        for (final sensorData in packet.payload) {
+          _graphPoints.putIfAbsent(sensorData.displayName, () => []);
+          _graphPoints[sensorData.displayName]!.add(
+            FlSpot(_graphIndex.toDouble(), sensorData.data),
+          );
+
+          // Update unit for selected sensor
+          if (sensorData.displayName == _selectedSensorForPlot) {
+            _currentSensorUnit = sensorData.displayUnit;
+          }
+        }
+        _graphIndex += 1;
+      }
+
+      // Set last packet for display
+      _lastPacket = packets.last;
+
+      // Set visible range to show all data or max 60 points
+      if (_graphIndex <= 60) {
+        _visibleRange = _graphIndex.toDouble();
+      } else {
+        _visibleRange = 60;
+      }
+      _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
+
+      // Enter CSV mode
+      _isCsvMode = true;
+      _loadedCsvPath = filePath;
+      _isConnected = false;
+      _isRecording = false;
+      _errorMessage = null;
+
+      notifyListeners();
+      return null; // Success
+    } catch (e) {
+      _errorMessage = 'Failed to load CSV file: $e';
+      _isCsvMode = false;
+      _loadedCsvPath = null;
+      notifyListeners();
+      return _errorMessage;
+    }
+  }
+
+  void closeCsvFile() {
+    _isCsvMode = false;
+    _loadedCsvPath = null;
+    _resetGraphState(resetVisibleRange: true);
+    _lastPacket = null;
+    _errorMessage = null;
+    notifyListeners();
   }
 
   @override

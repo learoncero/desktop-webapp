@@ -47,6 +47,7 @@ dependencies:
   path: ^1.8.2
   provider: ^6.0.5
   fl_chart: ^1.1.1
+  csv: ^6.0.0
 
 dev_dependencies:
   flutter_test:

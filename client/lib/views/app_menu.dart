@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:menu_bar/menu_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:file_selector/file_selector.dart';
 import '../viewmodels/serial_connection_viewmodel.dart';
 import '../widgets/settings_dialog.dart';
 
@@ -8,11 +9,7 @@ class AppMenu extends StatelessWidget {
   final ThemeMode currentThemeMode;
   final SerialConnectionViewModel? viewModel;
 
-  const AppMenu({
-    super.key,
-    required this.currentThemeMode,
-    this.viewModel,
-  });
+  const AppMenu({super.key, required this.currentThemeMode, this.viewModel});
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -30,6 +27,45 @@ class AppMenu extends StatelessWidget {
         Text('Version: $version'),
       ],
     );
+  }
+
+  Future<void> _loadCsvFile(BuildContext context) async {
+    const XTypeGroup csvTypeGroup = XTypeGroup(
+      label: 'CSV files',
+      extensions: ['csv'],
+    );
+
+    final XFile? file = await openFile(acceptedTypeGroups: [csvTypeGroup]);
+
+    if (file == null) {
+      return; // User cancelled
+    }
+
+    if (viewModel == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: ViewModel not available')),
+        );
+      }
+      return;
+    }
+
+    final error = await viewModel!.loadCsvFile(file.path);
+
+    if (context.mounted) {
+      if (error != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading CSV: $error')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('CSV loaded: ${file.name}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showSettings(BuildContext context) async {
@@ -57,9 +93,7 @@ class AppMenu extends StatelessWidget {
                   menuItems: [
                     MenuButton(
                       text: const Text("Load CSV"),
-                      onTap: () {
-                        // Handle load CSV action
-                      },
+                      onTap: () => _loadCsvFile(context),
                     ),
                     const MenuDivider(),
                     MenuButton(
