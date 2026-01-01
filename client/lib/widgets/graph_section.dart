@@ -237,6 +237,60 @@ class _GraphSectionState extends State<GraphSection> {
                 ),
               ),
 
+              // Statistics panel
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: ListenableBuilder(
+                  listenable: widget.viewModel,
+                  builder: (context, child) {
+                    final minVal = widget.viewModel.minValue;
+                    final maxVal = widget.viewModel.maxValue;
+                    final avgVal = widget.viewModel.avgValue;
+                    final hasData = minVal != double.infinity;
+
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildStatItem(
+                            context,
+                            "Min",
+                            hasData ? minVal.toStringAsFixed(2) : "—",
+                            widget.viewModel.currentSensorUnit ?? "",
+                          ),
+                          const SizedBox(width: 12),
+                          _buildStatItem(
+                            context,
+                            "Max",
+                            hasData ? maxVal.toStringAsFixed(2) : "—",
+                            widget.viewModel.currentSensorUnit ?? "",
+                          ),
+                          const SizedBox(width: 12),
+                          _buildStatItem(
+                            context,
+                            "Avg",
+                            hasData ? avgVal.toStringAsFixed(2) : "—",
+                            widget.viewModel.currentSensorUnit ?? "",
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
               // Slider
               Expanded(
                 child: Container(
@@ -352,6 +406,37 @@ class _GraphSectionState extends State<GraphSection> {
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    String unit,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value + (unit.isNotEmpty && value != "—" ? " $unit" : ""),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ],
     );
   }

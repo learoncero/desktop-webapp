@@ -64,6 +64,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
   bool _graphSliding = false;
   String _graphStartTime = "";
 
+  // Statistics per data stream
+  final Map<String, double> _minValues = {};
+  final Map<String, double> _maxValues = {};
+  final Map<String, double> _avgValues = {};
+
   static const List<int> availableBaudrates = [
     9600,
     19200,
@@ -104,6 +109,15 @@ class SerialConnectionViewModel extends ChangeNotifier {
   bool get graphSliding => _graphSliding;
   String get graphStartTime => _graphStartTime;
   int get graphIndex => _graphIndex;
+  double get minValue => _selectedSensorForPlot != null
+      ? _minValues[_selectedSensorForPlot] ?? double.infinity
+      : double.infinity;
+  double get maxValue => _selectedSensorForPlot != null
+      ? _maxValues[_selectedSensorForPlot] ?? double.negativeInfinity
+      : double.negativeInfinity;
+  double get avgValue => _selectedSensorForPlot != null
+      ? _avgValues[_selectedSensorForPlot] ?? 0
+      : 0;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -216,8 +230,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
               for (var sample in samples) {
                 // Add sample to graph if recording
-                addSampleToGraph(sample.dataStream, sample.value);
-                _currentSensorUnit = sample.dataUnit;
+                addSampleToGraph(
+                  sample.dataStream,
+                  sample.value,
+                  sample.dataUnit,
+                );
 
                 if (_graphStartTime.isEmpty && _isRecording) {
                   _graphStartTime =
@@ -357,8 +374,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
             for (var sample in samples) {
               // Only add the selected sensor to the graph
-              addSampleToGraph(sample.dataStream, sample.value);
-              _currentSensorUnit = sample.dataUnit;
+              addSampleToGraph(
+                sample.dataStream,
+                sample.value,
+                sample.dataUnit,
+              );
 
               if (_graphStartTime.isEmpty && _isRecording) {
                 _graphStartTime =
@@ -438,7 +458,11 @@ class SerialConnectionViewModel extends ChangeNotifier {
 
               for (var sample in samples) {
                 // Only add the selected sensor to the graph
-                addSampleToGraph(sample.dataStream, sample.value);
+                addSampleToGraph(
+                  sample.dataStream,
+                  sample.value,
+                  sample.dataUnit,
+                );
 
                 try {
                   if (_recorder != null && _isRecording) {
@@ -485,10 +509,33 @@ class SerialConnectionViewModel extends ChangeNotifier {
         const [];
   }
 
-  void addSampleToGraph(String dataStream, double value) {
+  void addSampleToGraph(String dataStream, double value, String unit) {
     if (!_isRecording) return; // Only plot when recording
     _graphPoints.putIfAbsent(dataStream, () => []);
     _graphPoints[dataStream]!.add(FlSpot(_graphIndex.toDouble(), value));
+
+    // Update statistics for this data stream
+    _minValues.putIfAbsent(dataStream, () => double.infinity);
+    _maxValues.putIfAbsent(dataStream, () => double.negativeInfinity);
+    _avgValues.putIfAbsent(dataStream, () => 0);
+
+    if (value < _minValues[dataStream]!) {
+      _minValues[dataStream] = value;
+    }
+
+    if (value > _maxValues[dataStream]!) {
+      _maxValues[dataStream] = value;
+    }
+
+    // Calculate running average
+    final currentAvg = _avgValues[dataStream]!;
+    final count = _graphPoints[dataStream]!.length;
+    _avgValues[dataStream] = ((currentAvg * (count - 1)) + value) / count;
+
+    // Update unit only for the selected sensor
+    if (dataStream == _selectedSensorForPlot) {
+      _currentSensorUnit = unit;
+    }
 
     if (!_graphSliding) {
       _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
@@ -588,6 +635,10 @@ class SerialConnectionViewModel extends ChangeNotifier {
     _availableSensors = [];
     _selectedSensorForPlot = null;
     _currentSensorUnit = null;
+    // Reset statistics
+    _minValues.clear();
+    _maxValues.clear();
+    _avgValues.clear();
     if (resetVisibleRange) {
       _visibleRange = 60;
     }

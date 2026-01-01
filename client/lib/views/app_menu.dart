@@ -7,12 +7,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import '../viewmodels/serial_connection_viewmodel.dart';
 import '../widgets/settings_dialog.dart';
+import '../main.dart';
 
 class AppMenu extends StatelessWidget {
-  final ThemeMode currentThemeMode;
   final SerialConnectionViewModel? viewModel;
 
-  const AppMenu({super.key, required this.currentThemeMode, this.viewModel});
+  const AppMenu({super.key, this.viewModel});
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -76,7 +76,7 @@ class AppMenu extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return SettingsDialog(
-          currentThemeMode: currentThemeMode,
+          currentThemeMode: MyApp.getThemeMode(context),
           viewModel: viewModel,
         );
       },
