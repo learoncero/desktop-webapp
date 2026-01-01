@@ -21,6 +21,7 @@ class CsvRecorder {
   bool _started = false;
 
   final Map<int, Map<String, Map<String, String>>> _pending = {};
+  final Set<int> _writtenTimestamps = {}; // Track timestamps already written to avoid duplicate rows when late sensors appear.
 
   CsvRecorder({required this.folderPath, String? baseFileName, List<String>? sensors, this.onSensorsChanged})
       : baseFileName = baseFileName ?? 'sensor_record',
@@ -72,6 +73,7 @@ class CsvRecorder {
     _sink = null;
     _file = null;
     _pending.clear();
+    _writtenTimestamps.clear();
     _headerWritten = false;
     _sensorsLocked = false;
   }
@@ -103,12 +105,21 @@ class CsvRecorder {
       try {
         onSensorsChanged?.call([sensorName]);
       } catch (_) {}
+      // If a row for this timestamp is already written, don't add a new pending entry
+      if (_writtenTimestamps.contains(unix)) {
+        return;
+      }
       // Still collect the sample in pending so that a later call to _flushRemaining will not lose it entirely, but won't include it in CSV columns.
       _pending.putIfAbsent(unix, () => {});
       _pending[unix]![key] = {
         'unit': unit,
         'value': sample.value.toString(),
       };
+      return;
+    }
+
+    // If a row for this timestamp is already written, ignore further samples for it
+    if (_writtenTimestamps.contains(unix)) {
       return;
     }
 
@@ -135,6 +146,11 @@ class CsvRecorder {
     _file = File(p.join(folderPath, filename));
     _sink = _file!.openWrite(mode: FileMode.write);
 
+    // Write UTF-8 BOM
+    try {
+      _sink!.write('\uFEFF');
+    } catch (_) {}
+
     /// Write header immediately only if sensors are already locked; otherwise
     /// header will be written later from setInitialSensors when initial sensors
     /// are provided.
@@ -159,6 +175,13 @@ class CsvRecorder {
     final rowMap = _pending[unix];
     if (rowMap == null) return;
 
+    // If the rowMap does not contain any of the known/initial sensor keys, then this timestamp only has unknown sensors -> skip writing an empty row.
+    final hasKnownSensorValue = _sensorKeys.any((s) => rowMap.containsKey(s));
+    if (!hasKnownSensorValue) {
+      _pending.remove(unix);
+      return;
+    }
+
     final values = <String>[];
     values.add(unix.toString());
     for (final s in _sensorKeys) {
@@ -176,6 +199,7 @@ class CsvRecorder {
     await _sink!.flush();
 
     _pending.remove(unix);
+    _writtenTimestamps.add(unix);
   }
 
   String _escapeForCsv(String v) => '"${v.replaceAll('"', '""')}"';
@@ -193,6 +217,8 @@ class CsvRecorder {
     }
 
     for (final k in keys) {
+      // Skip timestamps already written to avoid duplicate lines
+      if (_writtenTimestamps.contains(k)) continue;
       await _writeRowForTimestamp(k);
     }
   }

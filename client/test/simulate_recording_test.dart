@@ -136,6 +136,34 @@ void main() {
         expect(humNum, isNotNull, reason: 'Humidity value should be a number');
       }
 
+      // Additional checks: no duplicate timestamps and no rows that contain only empty sensor fields
+      final dataLines = lines.skip(1).toList();
+
+      // Check duplicates
+      final timestamps = <int>[];
+      for (final l in dataLines) {
+        final p0 = l.split(',')[0].trim();
+        final t = int.tryParse(p0);
+        expect(t, isNotNull, reason: 'Data line timestamp should parse to int');
+        timestamps.add(t!);
+      }
+      final uniqueTs = timestamps.toSet();
+      expect(uniqueTs.length, equals(timestamps.length), reason: 'There should be no duplicate timestamps in CSV data rows');
+
+      // Check for completely empty sensor fields (all quoted empty strings)
+      bool anyAllEmpty = false;
+      for (final l in dataLines) {
+        final parts = l.split(',').map((s) => s.trim()).toList();
+        final sensorFields = parts.sublist(1); // exclude timestamp
+        // If every sensor field is exactly an empty quoted string (""), then this row is empty
+        final allEmpty = sensorFields.every((f) => f == '""');
+        if (allEmpty) {
+          anyAllEmpty = true;
+          break;
+        }
+      }
+      expect(anyAllEmpty, isFalse, reason: 'There should be no data row where all sensor fields are empty (e.g., timestamp, "", "")');
+
       try {
         tempDir.deleteSync(recursive: true);
       } catch (_) {}
