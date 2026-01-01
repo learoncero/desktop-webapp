@@ -146,6 +146,11 @@ class CsvRecorder {
     _file = File(p.join(folderPath, filename));
     _sink = _file!.openWrite(mode: FileMode.write);
 
+    // Write UTF-8 BOM
+    try {
+      _sink!.write('\uFEFF');
+    } catch (_) {}
+
     /// Write header immediately only if sensors are already locked; otherwise
     /// header will be written later from setInitialSensors when initial sensors
     /// are provided.
