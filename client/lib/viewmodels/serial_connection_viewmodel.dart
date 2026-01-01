@@ -501,11 +501,15 @@ class SerialConnectionViewModel extends ChangeNotifier {
     if (value < _minValues[dataStream]!) {
       _minValues[dataStream] = value;
     }
+
     if (value > _maxValues[dataStream]!) {
       _maxValues[dataStream] = value;
     }
 
-    _avgValues[dataStream] = value;
+    // Calculate running average
+    final currentAvg = _avgValues[dataStream]!;
+    final count = _graphPoints[dataStream]!.length;
+    _avgValues[dataStream] = ((currentAvg * (count - 1)) + value) / count;
 
     // Update unit only for the selected sensor
     if (dataStream == _selectedSensorForPlot) {
