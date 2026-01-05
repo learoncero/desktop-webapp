@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:sensor_dash/viewmodels/connection_manager_viewmodel.dart';
 import '../widgets/settings_dialog.dart';
+import '../main.dart';
 
 class AppMenu extends StatelessWidget {
   final ThemeMode currentThemeMode;
@@ -80,7 +81,7 @@ class AppMenu extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return SettingsDialog(
-          currentThemeMode: currentThemeMode,
+          currentThemeMode: MyApp.getThemeMode(context),
           viewModel: connectionManagerViewModel,
         );
       },

@@ -113,8 +113,11 @@ class SerialConnectionViewModel extends ConnectionManagerViewModel {
 
               for (var sample in samples) {
                 // Add sample to graph if recording
-                addSampleToGraph(sample.dataStream, sample.value);
-                setCurrentSensorUnit(sample.dataUnit);
+                addSampleToGraph(
+                  sample.dataStream,
+                  sample.value,
+                  sample.dataUnit,
+                );
 
                 if (graphStartTime.isEmpty && isRecording) {
                   setGraphStartTime(
@@ -259,8 +262,11 @@ class SerialConnectionViewModel extends ConnectionManagerViewModel {
 
             for (var sample in samples) {
               // Only add the selected sensor to the graph
-              addSampleToGraph(sample.dataStream, sample.value);
-              setCurrentSensorUnit(sample.dataUnit);
+              addSampleToGraph(
+                sample.dataStream,
+                sample.value,
+                sample.dataUnit,
+              );
 
               if (graphStartTime.isEmpty && isRecording) {
                 setGraphStartTime(
@@ -341,7 +347,11 @@ class SerialConnectionViewModel extends ConnectionManagerViewModel {
 
               for (var sample in samples) {
                 // Only add the selected sensor to the graph
-                addSampleToGraph(sample.dataStream, sample.value);
+                addSampleToGraph(
+                  sample.dataStream,
+                  sample.value,
+                  sample.dataUnit,
+                );
 
                 try {
                   if (recorder != null && isRecording) {
