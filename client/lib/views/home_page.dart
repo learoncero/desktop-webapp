@@ -70,11 +70,21 @@ class _HomePageState extends State<HomePage> {
       // Put the app menu into the appBar so it receives proper bounded constraints.
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AppMenu(
-          currentThemeMode: MyApp.getThemeMode(context),
-          connectionBaseViewModel:
-              _connectionViewModels[_connectionSelectionViewmodel
-                  .currentConnection],
+        child: AnimatedBuilder(
+          animation: Listenable.merge([
+            _connectionSelectionViewmodel,
+            ..._connectionViewModels.values,
+          ]),
+          builder: (context, _) {
+            final currentVm =
+                _connectionViewModels[_connectionSelectionViewmodel
+                    .currentConnection]!;
+
+            return AppMenu(
+              currentThemeMode: MyApp.getThemeMode(context),
+              connectionBaseViewModel: currentVm,
+            );
+          },
         ),
       ),
 
