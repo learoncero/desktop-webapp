@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'package:sensor_dash/widgets/graph_plot.dart';
 
 class GraphSection extends StatefulWidget {
-  final SerialConnectionViewModel viewModel;
+  final ConnectionBaseViewModel viewModel;
   const GraphSection({super.key, required this.viewModel});
 
   @override
@@ -14,7 +13,7 @@ class GraphSection extends StatefulWidget {
 }
 
 class _GraphSectionState extends State<GraphSection> {
-  Future<void> _pickFolder(SerialConnectionViewModel vm) async {
+  Future<void> _pickFolder(ConnectionBaseViewModel vm) async {
     try {
       String? folderPath;
 
@@ -69,7 +68,8 @@ class _GraphSectionState extends State<GraphSection> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<SerialConnectionViewModel>(context);
+    final vm = widget.viewModel;
+
     final selectedFolderPath = vm.saveFolderPath;
 
     return Column(
@@ -330,68 +330,77 @@ class _GraphSectionState extends State<GraphSection> {
           ),
         ),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Record button
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20, top: 20),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(40),
-                  onTap: vm.isConnected ? vm.toggleRecording : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 70,
-                    height: 70,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: vm.isRecording ? Colors.red : Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: vm.isRecording
-                          ? null
-                          : Border.all(color: Colors.red, width: 4),
-                      boxShadow: vm.isRecording
-                          ? [
-                              BoxShadow(
-                                color: Colors.red.withValues(alpha: 0.6),
-                                blurRadius: 7,
-                                spreadRadius: 3,
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Text(
-                      "REC",
-                      style: TextStyle(
-                        color: vm.isRecording
-                            ? Colors.white
-                            : vm.isConnected
-                            ? Colors.red
-                            : Colors.grey,
-                        fontWeight: FontWeight.bold,
+        ListenableBuilder(
+          listenable: widget.viewModel,
+          builder: (context, child) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Record button
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20, top: 20),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(40),
+                      onTap: widget.viewModel.isConnected
+                          ? widget.viewModel.toggleRecording
+                          : null,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 70,
+                        height: 70,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: widget.viewModel.isRecording
+                              ? Colors.red
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: widget.viewModel.isRecording
+                              ? null
+                              : Border.all(color: Colors.red, width: 4),
+                          boxShadow: widget.viewModel.isRecording
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.red.withValues(alpha: 0.6),
+                                    blurRadius: 7,
+                                    spreadRadius: 3,
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Text(
+                          "REC",
+                          style: TextStyle(
+                            color: widget.viewModel.isRecording
+                                ? Colors.white
+                                : widget.viewModel.isConnected
+                                ? Colors.red
+                                : Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(width: 40),
+                const SizedBox(width: 40),
 
-            // Select folder button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+                // Select folder button
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                  ),
+                  onPressed: () => _pickFolder(widget.viewModel),
+                  child: const Text("Select Save Folder"),
                 ),
-              ),
-              onPressed: () => _pickFolder(vm),
-              child: const Text("Select Save Folder"),
-            ),
-          ],
+              ],
+            );
+          },
         ),
 
         // Display selected folder path

@@ -5,14 +5,19 @@ import 'package:flutter/services.dart';
 import 'package:menu_bar/menu_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:file_selector/file_selector.dart';
-import '../viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import '../widgets/settings_dialog.dart';
 import '../main.dart';
 
 class AppMenu extends StatelessWidget {
-  final SerialConnectionViewModel? viewModel;
+  final ThemeMode currentThemeMode;
+  final ConnectionBaseViewModel? connectionBaseViewModel;
 
-  const AppMenu({super.key, this.viewModel});
+  const AppMenu({
+    super.key,
+    required this.currentThemeMode,
+    this.connectionBaseViewModel,
+  });
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -44,7 +49,7 @@ class AppMenu extends StatelessWidget {
       return; // User cancelled
     }
 
-    if (viewModel == null) {
+    if (connectionBaseViewModel == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error: ViewModel not available')),
@@ -53,7 +58,7 @@ class AppMenu extends StatelessWidget {
       return;
     }
 
-    final error = await viewModel!.loadCsvFile(file.path);
+    final error = await connectionBaseViewModel!.loadCsvFile(file.path);
 
     if (context.mounted) {
       if (error != null) {
@@ -77,7 +82,7 @@ class AppMenu extends StatelessWidget {
       builder: (BuildContext dialogContext) {
         return SettingsDialog(
           currentThemeMode: MyApp.getThemeMode(context),
-          viewModel: viewModel,
+          viewModel: connectionBaseViewModel,
         );
       },
     );
