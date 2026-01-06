@@ -254,7 +254,9 @@ class _GraphSectionState extends State<GraphSection> {
                     return Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: Theme.of(context).colorScheme.outline,

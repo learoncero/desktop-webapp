@@ -44,6 +44,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   final Map<String, double> _minValues = {};
   final Map<String, double> _maxValues = {};
   final Map<String, double> _avgValues = {};
+  final Map<String, String> _sensorUnits = {};
 
   // Getters
   bool get isConnected => _isConnected;
@@ -268,20 +269,44 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
           "${firstPacket.timestamp.toLocal().day.toString().padLeft(2, '0')}.${firstPacket.timestamp.toLocal().month.toString().padLeft(2, '0')}.${firstPacket.timestamp.toLocal().year} "
           "${firstPacket.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${firstPacket.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${firstPacket.timestamp.toLocal().second.toString().padLeft(2, '0')}";
 
-      // Convert packets to graph points
+      // Convert packets to graph points and calculate statistics
       for (final packet in packets) {
         for (final sensorData in packet.payload) {
-          _graphPoints.putIfAbsent(sensorData.displayName, () => []);
-          _graphPoints[sensorData.displayName]!.add(
-            FlSpot(_graphIndex.toDouble(), sensorData.data),
+          final dataStream = sensorData.displayName;
+          final value = sensorData.data;
+          
+          _graphPoints.putIfAbsent(dataStream, () => []);
+          _graphPoints[dataStream]!.add(
+            FlSpot(_graphIndex.toDouble(), value),
           );
 
-          // Update unit for selected sensor
-          if (sensorData.displayName == _selectedSensorForPlot) {
-            _currentSensorUnit = sensorData.displayUnit;
+          // Store unit for this data stream
+          _sensorUnits[dataStream] = sensorData.displayUnit;
+
+          // Update statistics for this data stream
+          _minValues.putIfAbsent(dataStream, () => double.infinity);
+          _maxValues.putIfAbsent(dataStream, () => double.negativeInfinity);
+          _avgValues.putIfAbsent(dataStream, () => 0);
+
+          if (value < _minValues[dataStream]!) {
+            _minValues[dataStream] = value;
           }
+
+          if (value > _maxValues[dataStream]!) {
+            _maxValues[dataStream] = value;
+          }
+
+          // Calculate running average
+          final currentAvg = _avgValues[dataStream]!;
+          final count = _graphPoints[dataStream]!.length;
+          _avgValues[dataStream] = ((currentAvg * (count - 1)) + value) / count;
         }
         _graphIndex += 1;
+      }
+
+      // Set the unit for the selected sensor after loading all data
+      if (_selectedSensorForPlot != null) {
+        _currentSensorUnit = _sensorUnits[_selectedSensorForPlot];
       }
 
       // Set last packet for display
@@ -363,6 +388,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
     if ((isCsvMode && _availableSensors.contains(sensorName)) ||
         (isConnected && _availableSensors.contains(sensorName))) {
       _selectedSensorForPlot = sensorName;
+      _currentSensorUnit = _sensorUnits[sensorName];
       notifyListeners();
     }
   }
@@ -383,6 +409,9 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
     if (!_isRecording) return; // Only plot when recording
     _graphPoints.putIfAbsent(dataStream, () => []);
     _graphPoints[dataStream]!.add(FlSpot(_graphIndex.toDouble(), value));
+
+    // Store unit for this data stream
+    _sensorUnits[dataStream] = unit;
 
     // Update statistics for this data stream
     _minValues.putIfAbsent(dataStream, () => double.infinity);
@@ -447,6 +476,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
     _minValues.clear();
     _maxValues.clear();
     _avgValues.clear();
+    _sensorUnits.clear();
     if (resetVisibleRange) {
       _visibleRange = 60;
     }
