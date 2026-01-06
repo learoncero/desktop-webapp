@@ -16,132 +16,110 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+        - uses: actions/checkout@v4
 
-      - name: Install Flutter
+        - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Enable Linux desktop
+        - name: Enable Linux desktop
         run: flutter config --enable-linux-desktop
         working-directory: client
 
-      - name: Install dependencies (GTK)
+        - name: Install dependencies (GTK)
         run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
 
-      - name: Flutter pub get
+        - name: Flutter pub get
         run: flutter pub get
         working-directory: client
-        
-      - name: Run Flutter tests
+
+        - name: Run Flutter tests
         run: flutter test
         working-directory: client
 
-      - name: Build release
+        - name: Build release
         run: flutter build linux --release
         working-directory: client
         
-      - name: Create Debian package
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          APP_ID=sensor-dash
-          APP_NAME=SensorDash
-          VERSION=${GITHUB_REF_NAME#v}
-          ARCH=amd64
+        - name: Create Debian package
+          if: startsWith(github.ref, 'refs/tags/')
+          run: |
+            APP_ID=sensor-dash
+            APP_NAME=SensorDash
+            VERSION=${GITHUB_REF_NAME#v}
+            ARCH=amd64
 
-          PKG_DIR=${APP_NAME}_${VERSION}_${ARCH}
+            PKG_DIR=${APP_ID}_${VERSION}_${ARCH}
 
-          mkdir -p $PKG_DIR/DEBIAN
-          mkdir -p $PKG_DIR/usr/bin
-          mkdir -p $PKG_DIR/usr/lib/$APP_ID
-          mkdir -p $PKG_DIR/usr/share/applications
-          mkdir -p $PKG_DIR/usr/share/icons/hicolor/1024x1024/apps
+            mkdir -p $PKG_DIR/DEBIAN
+            mkdir -p $PKG_DIR/usr/bin
+            mkdir -p $PKG_DIR/usr/lib/$APP_ID
+            mkdir -p $PKG_DIR/usr/share/applications
+            mkdir -p $PKG_DIR/usr/share/icons/hicolor/1024x1024/apps
 
-          cp -r client/build/linux/x64/release/bundle/* \
-            $PKG_DIR/usr/lib/$APP_ID/
+            # Copy full Flutter bundle
+            cp -r client/build/linux/x64/release/bundle/* \
+              $PKG_DIR/usr/lib/$APP_ID/
 
-          ln -s /usr/lib/$APP_ID/$APP_NAME \
-            $PKG_DIR/usr/bin/$APP_ID
+            # Launcher symlink
+            ln -s /usr/lib/$APP_ID/SensorDash \
+              $PKG_DIR/usr/bin/$APP_ID
 
-          cat <<EOF > $PKG_DIR/usr/share/applications/$APP_ID.desktop
-          [Desktop Entry]
-          Name=$APP_NAME
-          Comment=SensorDash Desktop Application
-          Exec=$APP_ID
-          Icon=$APP_ID
-          Terminal=false
-          Type=Application
-          Categories=Utility;
-          EOF
+            # Desktop entry
+            cat <<EOF > $PKG_DIR/usr/share/applications/$APP_ID.desktop
+            [Desktop Entry]
+            Name=$APP_NAME
+            Comment=SensorDash Desktop Application
+            Exec=$APP_ID
+            Icon=$APP_ID
+            Terminal=false
+            Type=Application
+            Categories=Utility;
+            EOF
 
-          cp client/linux/icons/icon.png \
-             $PKG_DIR/usr/share/icons/hicolor/1024x1024/apps/$APP_ID.png
+            # App icon
+            cp client/linux/icons/icon.png \
+              $PKG_DIR/usr/share/icons/hicolor/1024x1024/apps/$APP_ID.png
 
-          cat <<EOF > $PKG_DIR/DEBIAN/control
-          Package: $APP_ID
-          Version: $VERSION
-          Section: utils
-          Priority: optional
-          Architecture: $ARCH
-          Maintainer: Roncero, Schonberger, Schneider
-          Description: SensorDash desktop application
-          EOF
+            # Control file
+            cat <<EOF > $PKG_DIR/DEBIAN/control
+            Package: $APP_ID
+            Version: $VERSION
+            Section: utils
+            Priority: optional
+            Architecture: $ARCH
+            Maintainer: Roncero, Schonberger, Schneider
+            Description: SensorDash desktop application
+            EOF
 
-          dpkg-deb --build $PKG_DIR
-          mkdir -p dist
-          mv ${PKG_DIR}.deb dist/
+            # Post-install hook
+            cat <<EOF > $PKG_DIR/DEBIAN/postinst
+            #!/bin/sh
+            set -e
+            update-desktop-database || true
+            gtk-update-icon-cache -f /usr/share/icons/hicolor || true
+            EOF
 
-      - name: Upload .deb to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*.deb
+            chmod 755 $PKG_DIR/DEBIAN/postinst
+
+            dpkg-deb --build $PKG_DIR
+            mkdir -p dist
+            mv ${PKG_DIR}.deb dist/
+
+          - name: Upload .deb to GitHub Release
+            if: startsWith(github.ref, 'refs/tags/')
+            uses: softprops/action-gh-release@v1
+            with:
+              files: dist/*.deb
 
 
-      - name: Sanitize branch name
-        id: sanitize
-        run: echo "SANITIZED_REF=${GITHUB_REF_NAME//\//_}" >> $GITHUB_ENV
+          - name: Sanitize branch name
+            id: sanitize
+            run: echo "SANITIZED_REF=${GITHUB_REF_NAME//\//_}" >> $GITHUB_ENV
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build-${{ env.SANITIZED_REF }}
-          path: client/build/linux/x64/release/bundle/
-          
-  build-macos:
-    runs-on: macos-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-
-      - name: Enable macOS desktop
-        run: flutter config --enable-macos-desktop
-        working-directory: client
-        
-      - name: Install macOS native dependencies
-        run: brew install automake libtool
-
-      - name: Flutter pub get
-        run: flutter pub get
-        working-directory: client
-
-      - name: Run Flutter tests
-        run: flutter test
-        working-directory: client
-
-      - name: Build macOS release
-        run: flutter build macos --release
-        working-directory: client
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-build-main
-          path: client/build/macos/Build/Products/Release/
+          - name: Upload Artifact
+            uses: actions/upload-artifact@v4
+            with:
+              name: linux-build-${{ env.SANITIZED_REF }}
+              path: client/build/linux/x64/release/bundle/
