@@ -21,7 +21,7 @@ class AppMenu extends StatelessWidget {
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
-    final version = '${info.version}+${info.buildNumber}';
+    final version = 'v${info.version}';
 
     if (!context.mounted) return;
 
@@ -88,6 +88,79 @@ class AppMenu extends StatelessWidget {
     );
   }
 
+  Future<void> _showHelp(BuildContext context) async {
+    if (!context.mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Help — Application Guide'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                  'This application captures, visualizes and optionally records sensor data coming from serial or UDP sources. It provides a live graph, connection management, and CSV recording for later analysis. The interface is optimized for desktop use (Windows/macOS/Linux).',
+                ),
+                const SizedBox(height: 12),
+                const Text('Usage', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                  '1. Select a connection type from the menu (Serial or UDP).\n'
+                  '2. Configure the connection parameters (port/address, baud rate, sample format).\n'
+                  '3. Click Connect to begin receiving live data. Live plots update in real time.\n'
+                  '4. To record data, open the Recording controls (menu or toolbar) and enable CSV recording before or during a session. Recorded files are saved to the configured folder.',
+                ),
+                const SizedBox(height: 12),
+                const Text('CSV recording behavior', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                  '- Each recorded CSV row represents one sample set with a timestamp and sensor values.\n'
+                  "- Files are created per recording session; if a recording is restarted a new file is created.\n"
+                  "- CSV uses UTF-8 encoding and comma delimiters. Time format uses ISO 8601 (UTC).\n"
+                  "- When disk is full or write errors occur, recording stops and an error notification is shown.",
+                ),
+                const SizedBox(height: 12),
+                const Text('Known limitations', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                  '- Real-time plotting is intended for moderate sample rates; very high rates may drop frames or samples.\n'
+                  '- Serial port detection depends on OS drivers; some devices may require additional drivers.\n'
+                  '- UDP reception is best-effort; packet loss on the network will result in missing samples.\n'
+                  '- There is no built-in data replay UI — use the CSV files for offline analysis.',
+                ),
+                const SizedBox(height: 12),
+                const Text('Troubleshooting', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                  '- No data shown after Connect: verify cable/device power, correct port/baud and that only one process uses the port.\n'
+                  '- Unexpected CSV format: check recording settings and look at the first lines of the CSV file with a text editor.\n'
+                  '- App does not detect serial ports on Windows: try restarting the machine or reinstalling the device driver; run the app as Administrator if permissions are restricted.\n'
+                  '- If the graph freezes or becomes slow: try lowering sample rate or filter out unused channels. Restarting the app can help recover from resource leaks.',
+                ),
+                const SizedBox(height: 40),
+                const Text('Support & Feedback', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text(
+                  'If problems persist, consult the project README or open an issue on GitHub: https://github.com/learoncero/desktop-webapp with logs and a short description of steps to reproduce.',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -135,7 +208,7 @@ class AppMenu extends StatelessWidget {
                     MenuButton(
                       text: const Text("Help"),
                       onTap: () {
-                        // Handle help action
+                        _showHelp(context);
                       },
                     ),
                     const MenuDivider(),
