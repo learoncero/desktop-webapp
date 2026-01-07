@@ -389,16 +389,54 @@ class _GraphSectionState extends State<GraphSection> {
 
                 const SizedBox(width: 40),
 
-                // Select folder button
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
+                // Select folder button + help
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                      ),
+                      onPressed: () => _pickFolder(widget.viewModel),
+                      child: const Text("Select Save Folder"),
                     ),
-                  ),
-                  onPressed: () => _pickFolder(widget.viewModel),
-                  child: const Text("Select Save Folder"),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Help: Select Save Folder',
+                      icon: const Icon(Icons.help_outline),
+                      onPressed: () {
+                        showDialog<void>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Save Folder — Help'),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Use "Select Save Folder" to manually choose the directory where CSV recordings will be written when recording is active.',
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'A default folder is already configured by the application as seen at the bottom of the screen; selecting a folder here overrides the default for subsequent recordings.',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             );
