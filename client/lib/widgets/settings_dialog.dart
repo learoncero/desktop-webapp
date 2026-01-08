@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
+import 'package:sensor_dash/services/sampling_manager.dart';
 import '../main.dart';
 
 class SettingsDialog extends StatefulWidget {
@@ -19,12 +20,15 @@ class SettingsDialog extends StatefulWidget {
 class _SettingsDialogState extends State<SettingsDialog> {
   late ThemeMode _selectedTheme;
   late double _visibleRange;
+  late ReductionMethod _reductionMethod;
 
   @override
   void initState() {
     super.initState();
     _selectedTheme = widget.currentThemeMode;
     _visibleRange = widget.viewModel?.visibleRange ?? 60;
+    _reductionMethod =
+        widget.viewModel?.reductionMethod ?? ReductionMethod.average;
   }
 
   @override
@@ -97,6 +101,55 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 Text('${_visibleRange.round()}s'),
               ],
             ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                const Text(
+                  'Reduction Method:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(width: 16),
+                DropdownButton<ReductionMethod>(
+                  value: _reductionMethod,
+                  onChanged: widget.viewModel?.isRecording == true
+                      ? null
+                      : (ReductionMethod? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _reductionMethod = newValue;
+                            });
+                            widget.viewModel?.setReductionMethod(newValue);
+                          }
+                        },
+                  items: const [
+                    DropdownMenuItem(
+                      value: ReductionMethod.average,
+                      child: Text('Average'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReductionMethod.max,
+                      child: Text('Maximum'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReductionMethod.min,
+                      child: Text('Minimum'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (widget.viewModel?.isRecording == true)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  '(Cannot change while recording)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
           ],
         ],
       ),

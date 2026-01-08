@@ -7,11 +7,13 @@ import 'package:path/path.dart' as p;
 import 'package:sensor_dash/services/csv_recorder.dart';
 import 'package:sensor_dash/services/csv_loader.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
+import 'package:sensor_dash/services/sampling_manager.dart';
 
 abstract class ConnectionBaseViewModel extends ChangeNotifier {
   bool _isConnected = false;
   bool _isRecording = false;
   String? _errorMessage;
+  ReductionMethod _reductionMethod = ReductionMethod.average;
 
   SensorPacket? _lastPacket;
   String? _saveFolderPath;
@@ -55,6 +57,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   Map<String, List<FlSpot>> get graphPoints => _graphPoints;
   bool get graphSliding => _graphSliding;
   String get graphStartTime => _graphStartTime;
+  ReductionMethod get reductionMethod => _reductionMethod;
   int get graphIndex => _graphIndex;
   SensorPacket? get lastPacket => _lastPacket;
   String? get saveFolderPath => _saveFolderPath;
@@ -381,6 +384,11 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
     if (range < 10 || range > 300) return;
     _visibleRange = range;
     _visibleStart = (_graphIndex - _visibleRange).clamp(0, double.infinity);
+    notifyListeners();
+  }
+
+  void setReductionMethod(ReductionMethod method) {
+    _reductionMethod = method;
     notifyListeners();
   }
 

@@ -105,6 +105,7 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
 
         // Initialize sampling manager (samples every 1 second)
         _samplingManager = SamplingManager(
+          reductionMethod: reductionMethod,
           onSampleReady: (samples) async {
             setCurrentSamples(samples);
             for (var sample in samples) {
@@ -193,5 +194,11 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
 
     super.disconnect();
     notifyListeners();
+  }
+
+  @override
+  void setReductionMethod(ReductionMethod method) {
+    super.setReductionMethod(method);
+    _samplingManager?.reductionMethod = method;
   }
 }

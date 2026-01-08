@@ -257,6 +257,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
         // Initialize sampling manager (samples every 1 second)
         _samplingManager = SamplingManager(
+          reductionMethod: reductionMethod,
           onSampleReady: (samples) async {
             setCurrentSamples(samples);
 
@@ -342,6 +343,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
           // Initialize sampling manager (samples every 1 second)
           _samplingManager = SamplingManager(
+            reductionMethod: reductionMethod,
             onSampleReady: (samples) async {
               setCurrentSamples(samples);
 
@@ -399,5 +401,11 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
     super.disconnect();
     notifyListeners();
+  }
+
+  @override
+  void setReductionMethod(ReductionMethod method) {
+    super.setReductionMethod(method);
+    _samplingManager?.reductionMethod = method;
   }
 }
