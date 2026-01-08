@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'package:sensor_dash/services/json_parser.dart';
+import 'package:sensor_dash/services/csv_parser.dart';
 import 'package:sensor_dash/services/serial_source.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 class UdpSource {
   final String address;
   final int port;
+  final DataFormat dataFormat;
 
   RawDatagramSocket? _socket;
 
-  UdpSource(this.address, this.port);
+  UdpSource(this.address, this.port, {this.dataFormat = DataFormat.json});
 
   Future<bool> connect({
     required PacketCallback onPacket,
@@ -27,7 +30,9 @@ class UdpSource {
           if (datagram != null) {
             final message = String.fromCharCodes(datagram.data);
 
-            final packet = SensorJsonParser.parse(message);
+            final packet = dataFormat == DataFormat.json
+                ? JsonParser.parse(message)
+                : CsvParser.parse(message);
 
             if (packet != null) {
               onPacket(packet);

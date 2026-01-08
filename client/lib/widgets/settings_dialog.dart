@@ -19,12 +19,14 @@ class SettingsDialog extends StatefulWidget {
 class _SettingsDialogState extends State<SettingsDialog> {
   late ThemeMode _selectedTheme;
   late double _visibleRange;
+  late DataFormat _selectedDataFormat;
 
   @override
   void initState() {
     super.initState();
     _selectedTheme = widget.currentThemeMode;
     _visibleRange = widget.viewModel?.visibleRange ?? 60;
+    _selectedDataFormat = widget.viewModel?.dataFormat ?? DataFormat.json;
   }
 
   @override
@@ -69,6 +71,36 @@ class _SettingsDialogState extends State<SettingsDialog> {
             ),
           ),
           if (widget.viewModel != null) ...[
+            const SizedBox(height: 24),
+            const Text(
+              'Data Format',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            RadioGroup<DataFormat>(
+              groupValue: _selectedDataFormat,
+              onChanged: (DataFormat? value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedDataFormat = value;
+                  });
+                  widget.viewModel?.setDataFormat(value);
+                }
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    title: const Text('JSON'),
+                    leading: Radio<DataFormat>(value: DataFormat.json),
+                  ),
+                  ListTile(
+                    title: const Text('CSV'),
+                    leading: Radio<DataFormat>(value: DataFormat.csv),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             const Text(
               'Graph Window',

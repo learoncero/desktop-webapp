@@ -228,11 +228,12 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       );
 
       if (!success && allowSimulationIfNoDevice) {
-        // Try simulation fallback via injected factory
-        _serial = _serialFactory(
+        // Try simulation fallback
+        _serial = SerialSource(
           _selectedPort!,
           _selectedBaudrate,
           simulate: true,
+          dataFormat: dataFormat,
         );
         _isSimulated = _serial?.simulate ?? true;
         success = _serial!.connect(

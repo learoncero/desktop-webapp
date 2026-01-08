@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_dash/services/json_parser.dart';
+import 'package:sensor_dash/services/csv_parser.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'dart:async';
 
 typedef PacketCallback = void Function(SensorPacket packet);
@@ -12,13 +14,19 @@ class SerialSource {
   final String portName;
   final int baudRate;
   final bool simulate;
+  final DataFormat dataFormat;
   SerialPort? port;
   SerialPortReader? reader;
 
   Timer? _simTimer;
   int _simCounter = 0;
 
-  SerialSource(this.portName, this.baudRate, {this.simulate = false});
+  SerialSource(
+    this.portName,
+    this.baudRate, {
+    this.simulate = false,
+    this.dataFormat = DataFormat.json,
+  });
 
   bool connect({required PacketCallback onPacket, ErrorCallback? onError}) {
     if (simulate) {
@@ -40,7 +48,10 @@ class SerialSource {
           },
         ];
         final jsonLine = jsonEncode({'timestamp': ts, 'payload': payload});
-        final packet = SensorJsonParser.parse(jsonLine);
+        final packet = dataFormat == DataFormat.json
+            ? JsonParser.parse(jsonLine)
+            : null; // CSV simulation not implemented
+
         if (packet != null) {
           onPacket(packet);
         }
@@ -62,13 +73,15 @@ class SerialSource {
         (data) {
           final line = utf8.decode(data).trim();
 
-          // Ignore lines that are not JSON objects
-          if (!line.startsWith('{')) {
+          if (line.isEmpty) {
             return;
           }
 
-          // Parse packet
-          final packet = SensorJsonParser.parse(line);
+          // Parse packet based on selected format
+          final packet = dataFormat == DataFormat.json
+              ? JsonParser.parse(line)
+              : CsvParser.parse(line);
+
           if (packet != null) {
             if (kDebugMode) {
               print('Parsed packet with ${packet.payload.length} sensors');

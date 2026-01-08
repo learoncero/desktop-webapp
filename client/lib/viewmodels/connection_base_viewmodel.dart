@@ -8,6 +8,8 @@ import 'package:sensor_dash/services/csv_recorder.dart';
 import 'package:sensor_dash/services/csv_loader.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 
+enum DataFormat { json, csv }
+
 abstract class ConnectionBaseViewModel extends ChangeNotifier {
   bool _isConnected = false;
   bool _isRecording = false;
@@ -46,6 +48,9 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   final Map<String, double> _avgValues = {};
   final Map<String, String> _sensorUnits = {};
 
+  // Data format setting
+  DataFormat _dataFormat = DataFormat.json;
+
   // Getters
   bool get isConnected => _isConnected;
   bool get isRecording => _isRecording;
@@ -66,6 +71,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   List<String> get availableSensors => _availableSensors;
   List<SampledValue>? get currentSamples => _currentSamples;
   CsvRecorder? get recorder => _recorder;
+  DataFormat get dataFormat => _dataFormat;
   double get minValue => _selectedSensorForPlot != null
       ? _minValues[_selectedSensorForPlot] ?? double.infinity
       : double.infinity;
@@ -140,6 +146,12 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
 
     // Start/stop recorder depending on state
     maybeStartRecorder();
+  }
+
+  // Set the data format (JSON or CSV)
+  void setDataFormat(DataFormat format) {
+    _dataFormat = format;
+    notifyListeners();
   }
 
   void startRecording() {

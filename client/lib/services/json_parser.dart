@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:sensor_dash/models/sensor_packet.dart';
 
-class SensorJsonParser {
+class JsonParser {
   static SensorPacket? parse(String line) {
     try {
       final decoded = jsonDecode(line);

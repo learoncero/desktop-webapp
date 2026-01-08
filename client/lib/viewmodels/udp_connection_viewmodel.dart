@@ -5,10 +5,7 @@ import 'package:sensor_dash/services/udp_source.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 class UdpConnectionViewModel extends ConnectionBaseViewModel {
-  final UdpSource Function(String address, int port) _udpFactory;
-
-  UdpConnectionViewModel({UdpSource Function(String, int)? serialFactory})
-    : _udpFactory = serialFactory ?? ((p, b) => UdpSource(p, b)) {
+  UdpConnectionViewModel() {
     // Initialize a cross-platform default save folder (user can still change it)
     initDefaultSaveFolder();
   }
@@ -28,7 +25,7 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
     }
 
     try {
-      _udp = _udpFactory(_address, _port);
+      _udp = UdpSource(_address, _port, dataFormat: dataFormat);
 
       var success = _udp!.connect(
         onPacket: (packet) {
