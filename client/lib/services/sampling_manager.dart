@@ -2,17 +2,22 @@ import 'dart:async';
 import 'package:sensor_dash/models/sampled_value.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 
+enum ReductionMethod { average, max, min }
+
 class SamplingManager {
   static const int samplingIntervalSeconds = 1; // Sample every 1 second
 
   final Map<String, List<double>> _collectedValuesBySensor = {};
   final Map<String, String> _sensorUnits = {};
   Timer? _samplingTimer;
-
   // Callback for when new averaged samples are ready
   final void Function(List<SampledValue> samples) onSampleReady;
+  ReductionMethod reductionMethod;
 
-  SamplingManager({required this.onSampleReady}) {
+  SamplingManager({
+    required this.onSampleReady,
+    this.reductionMethod = ReductionMethod.average,
+  }) {
     _startSampling();
   }
 
@@ -37,6 +42,17 @@ class SamplingManager {
     );
   }
 
+  double _reduceValues(List<double> values) {
+    switch (reductionMethod) {
+      case ReductionMethod.average:
+        return values.reduce((a, b) => a + b) / values.length;
+      case ReductionMethod.max:
+        return values.reduce((a, b) => a > b ? a : b);
+      case ReductionMethod.min:
+        return values.reduce((a, b) => a < b ? a : b);
+    }
+  }
+
   void _processSample() {
     if (_collectedValuesBySensor.isEmpty) {
       return;
@@ -53,13 +69,13 @@ class SamplingManager {
         continue;
       }
 
-      final average = values.reduce((a, b) => a + b) / values.length;
+      final reducedValue = _reduceValues(values);
 
       final sampledValue = SampledValue(
         dataStream: sensorName,
         dataUnit: _sensorUnits[sensorName] ?? '',
         timestamp: timestamp,
-        value: average,
+        value: reducedValue,
       );
 
       sampledValues.add(sampledValue);
