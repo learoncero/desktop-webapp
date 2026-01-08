@@ -3,8 +3,6 @@
 
 #include <gtk/gtk.h>
 
-#define APPLICATION_ID "sensor-dash"
-
 G_DECLARE_FINAL_TYPE(MyApplication,
                      my_application,
                      MY,
