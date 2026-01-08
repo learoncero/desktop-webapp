@@ -24,63 +24,74 @@ class UdpConnectionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: viewModel,
-      builder: (context, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          child: Row(
-            children: [
-              Text("Address:"),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  onChanged: viewModel.isConnected
-                      ? null
-                      : viewModel.updateAddress,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  enabled: !viewModel.isConnected,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Address',
-                    hintStyle: TextStyle(fontWeight: FontWeight.normal),
-                    isDense: true,
+    return SizedBox(
+      height: 64,
+      child: ListenableBuilder(
+        listenable: viewModel,
+        builder: (context, child) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+            child: Row(
+              children: [
+                Text("Address:"),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 300,
+                  child: TextField(
+                    controller: viewModel.addressController,
+                    onChanged: viewModel.isConnected
+                        ? null
+                        : viewModel.updateAddress,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    enabled: !viewModel.isConnected,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Address',
+                      hintStyle: TextStyle(fontWeight: FontWeight.normal),
+                      isDense: true,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 24),
-              Text("Port:"),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 80,
-                child: TextField(
-                  keyboardType: TextInputType.number,
-                  onChanged: viewModel.isConnected
-                      ? null
-                      : viewModel.updatePort,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  enabled: !viewModel.isConnected,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Port',
-                    hintStyle: TextStyle(fontWeight: FontWeight.normal),
-                    isDense: true,
+                const SizedBox(width: 24),
+                Text("Port:"),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: viewModel.portController,
+                    keyboardType: TextInputType.number,
+                    onChanged: viewModel.isConnected
+                        ? null
+                        : viewModel.updatePort,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    enabled: !viewModel.isConnected,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Port',
+                      hintStyle: TextStyle(fontWeight: FontWeight.normal),
+                      isDense: true,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 24),
-              ElevatedButton(
-                onPressed: viewModel.isConnected
-                    ? () => handleDisconnect(context)
-                    : () => handleConnect(context),
-                child: Text(viewModel.isConnected ? 'Disconnect' : 'Connect'),
-              ),
-            ],
-          ),
-        );
-      },
+                const SizedBox(width: 24),
+                ElevatedButton(
+                  onPressed: viewModel.isConnected
+                      ? () => handleDisconnect(context)
+                      : () => handleConnect(context),
+                  child: Text(viewModel.isConnected ? 'Disconnect' : 'Connect'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

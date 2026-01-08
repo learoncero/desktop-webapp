@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:flutter/material.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'package:sensor_dash/services/udp_source.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
@@ -7,8 +8,14 @@ import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 class UdpConnectionViewModel extends ConnectionBaseViewModel {
   final UdpSource Function(String address, int port) _udpFactory;
 
+  final addressController = TextEditingController();
+  final portController = TextEditingController();
+
   UdpConnectionViewModel({UdpSource Function(String, int)? serialFactory})
     : _udpFactory = serialFactory ?? ((p, b) => UdpSource(p, b)) {
+    addressController.text = _address;
+    portController.text = _port == 0 ? "" : _port.toString();
+
     // Initialize a cross-platform default save folder (user can still change it)
     initDefaultSaveFolder();
   }
