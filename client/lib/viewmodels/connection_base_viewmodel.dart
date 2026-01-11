@@ -48,8 +48,8 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   final Map<String, double> _avgValues = {};
   final Map<String, String> _sensorUnits = {};
 
-  // Data format setting
-  DataFormat _dataFormat = DataFormat.json;
+  // Data format setting - shared across all connection types
+  static DataFormat _sharedDataFormat = DataFormat.json;
 
   // Getters
   bool get isConnected => _isConnected;
@@ -71,7 +71,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   List<String> get availableSensors => _availableSensors;
   List<SampledValue>? get currentSamples => _currentSamples;
   CsvRecorder? get recorder => _recorder;
-  DataFormat get dataFormat => _dataFormat;
+  DataFormat get dataFormat => _sharedDataFormat;
   double get minValue => _selectedSensorForPlot != null
       ? _minValues[_selectedSensorForPlot] ?? double.infinity
       : double.infinity;
@@ -148,9 +148,9 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
     maybeStartRecorder();
   }
 
-  // Set the data format (JSON or CSV)
+  // Set the data format (JSON or CSV) - shared across all instances
   void setDataFormat(DataFormat format) {
-    _dataFormat = format;
+    _sharedDataFormat = format;
     notifyListeners();
   }
 
@@ -286,11 +286,9 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
         for (final sensorData in packet.payload) {
           final dataStream = sensorData.displayName;
           final value = sensorData.data;
-          
+
           _graphPoints.putIfAbsent(dataStream, () => []);
-          _graphPoints[dataStream]!.add(
-            FlSpot(_graphIndex.toDouble(), value),
-          );
+          _graphPoints[dataStream]!.add(FlSpot(_graphIndex.toDouble(), value));
 
           // Store unit for this data stream
           _sensorUnits[dataStream] = sensorData.displayUnit;

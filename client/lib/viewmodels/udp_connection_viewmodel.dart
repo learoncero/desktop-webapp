@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'package:sensor_dash/services/udp_source.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
@@ -30,7 +31,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
       var success = _udp!.connect(
         onPacket: (packet) {
           setLastPaket(packet);
-          setErrorMessage(null);
 
           // Add to packet stream for any listeners (e.g., recorder)
           try {
@@ -45,12 +45,12 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
+            clearError();
           } else {
-            // Check if sensors have changed
-            final currentSet = availableSensors.toSet();
-            final newSet = sensorNames.toSet();
+            // Check if sensors have changed using listEquals
+            final sensorsChanged = !listEquals(availableSensors, sensorNames);
 
-            if (currentSet != newSet) {
+            if (sensorsChanged) {
               if (!isRecording) {
                 // Update sensors if not recording
                 setAvailableSensors(sensorNames);
@@ -62,12 +62,20 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
+                clearError();
               } else {
-                // Show warning if recording and sensors changed
-                setErrorMessage(
-                  'Sensors changed during recording. Please stop recording to update.',
-                );
+                // Show warning once if recording and sensors changed
+                if (errorMessage !=
+                    'Sensors changed during recording. Please stop recording to update.') {
+                  setErrorMessage(
+                    'Sensors changed during recording. Please stop recording to update.',
+                  );
+                  notifyListeners();
+                }
               }
+            } else {
+              // Sensors match, clear any previous error
+              clearError();
             }
           }
 
@@ -83,9 +91,12 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
           }
         },
         onError: (error) {
-          log('Serial error: $error');
-          setErrorMessage('Connection lost: Port disconnected.');
-          disconnect();
+          log('UDP error: $error');
+          if (isRecording) {
+            setErrorMessage(error);
+            stopRecording();
+            notifyListeners();
+          }
         },
       );
 
@@ -104,7 +115,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                 sample.value,
                 sample.dataUnit,
               );
-              setCurrentSensorUnit(sample.dataUnit);
 
               if (graphStartTime.isEmpty && isRecording) {
                 setGraphStartTime(

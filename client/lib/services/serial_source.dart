@@ -54,6 +54,11 @@ class SerialSource {
 
         if (packet != null) {
           onPacket(packet);
+        } else {
+          onError?.call(
+            'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
+            'Please check your data format settings.',
+          );
         }
       });
 
@@ -77,16 +82,17 @@ class SerialSource {
             return;
           }
 
-          // Parse packet based on selected format
           final packet = dataFormat == DataFormat.json
               ? JsonParser.parse(line)
               : CsvParser.parse(line);
 
           if (packet != null) {
-            if (kDebugMode) {
-              print('Parsed packet with ${packet.payload.length} sensors');
-            }
             onPacket(packet);
+          } else {
+            onError?.call(
+              'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
+              'Please check your data format settings.',
+            );
           }
         },
         onError: (error) {

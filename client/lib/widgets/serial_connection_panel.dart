@@ -28,6 +28,23 @@ class SerialConnectionPanel extends StatelessWidget {
     return ListenableBuilder(
       listenable: viewModel,
       builder: (context, child) {
+        // Show error message as SnackBar if present
+        if (viewModel.errorMessage != null) {
+          final errorMsg = viewModel.errorMessage!;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(errorMsg),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+              viewModel.clearError();
+            }
+          });
+        }
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           color: Theme.of(context).colorScheme.surfaceContainerHigh,

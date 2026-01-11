@@ -79,14 +79,16 @@ class _SettingsDialogState extends State<SettingsDialog> {
             const SizedBox(height: 8),
             RadioGroup<DataFormat>(
               groupValue: _selectedDataFormat,
-              onChanged: (DataFormat? value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedDataFormat = value;
-                  });
-                  widget.viewModel?.setDataFormat(value);
-                }
-              },
+              onChanged: widget.viewModel?.isConnected == true
+                  ? (_) {}
+                  : (DataFormat? value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedDataFormat = value;
+                        });
+                        widget.viewModel?.setDataFormat(value);
+                      }
+                    },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -101,6 +103,18 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ],
               ),
             ),
+            if (widget.viewModel?.isConnected == true)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  '(Cannot change while connected)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
             const Text(
               'Graph Window',
