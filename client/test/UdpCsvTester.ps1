@@ -1,6 +1,6 @@
-$sourcePort = 40000
-$targetIp = "127.0.0.1"
-$targetPort = 5000
+$sourcePort = 40001
+$targetIp = "127.0.0.2"
+$targetPort = 5001
 
 $udp = New-Object System.Net.Sockets.UdpClient($sourcePort)
 $endpoint = New-Object System.Net.IPEndPoint (

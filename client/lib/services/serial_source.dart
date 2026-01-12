@@ -57,7 +57,7 @@ class SerialSource {
         } else {
           onError?.call(
             'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
-            'Please check your data format settings.',
+            'Please disconnect and check your data format settings.',
           );
         }
       });
@@ -91,7 +91,7 @@ class SerialSource {
           } else {
             onError?.call(
               'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
-              'Please check your data format settings.',
+              'Please disconnect and check your data format settings.',
             );
           }
         },
