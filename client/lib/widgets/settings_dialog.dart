@@ -38,217 +38,265 @@ class _SettingsDialogState extends State<SettingsDialog> {
     return AlertDialog(
       title: const Text('Settings'),
       content: SizedBox(
-        width: 500,
+        width: 800,
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SettingsSection(
-                title: 'Appearance',
+              // Left Column
+              Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Theme', style: TextStyle(fontSize: 14)),
-                    const SizedBox(height: 8),
-                    RadioGroup<ThemeMode>(
-                      groupValue: _selectedTheme,
-                      onChanged: (ThemeMode? value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedTheme = value;
-                          });
-                          MyApp.setThemeMode(context, value);
-                        }
-                      },
+                    _SettingsSection(
+                      title: 'Appearance',
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ListTile(
-                            dense: true,
-                            visualDensity: VisualDensity.compact,
-                            title: const Text('System'),
-                            leading: Radio<ThemeMode>(value: ThemeMode.system),
-                          ),
-                          ListTile(
-                            dense: true,
-                            visualDensity: VisualDensity.compact,
-                            title: const Text('Light'),
-                            leading: Radio<ThemeMode>(value: ThemeMode.light),
-                          ),
-                          ListTile(
-                            dense: true,
-                            visualDensity: VisualDensity.compact,
-                            title: const Text('Dark'),
-                            leading: Radio<ThemeMode>(value: ThemeMode.dark),
+                          const Text('Theme', style: TextStyle(fontSize: 14)),
+                          const SizedBox(height: 8),
+                          RadioGroup<ThemeMode>(
+                            groupValue: _selectedTheme,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedTheme = value;
+                                });
+                                MyApp.setThemeMode(context, value);
+                              }
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  dense: true,
+                                  visualDensity: VisualDensity.compact,
+                                  title: const Text('System'),
+                                  leading: Radio<ThemeMode>(
+                                    value: ThemeMode.system,
+                                  ),
+                                ),
+                                ListTile(
+                                  dense: true,
+                                  visualDensity: VisualDensity.compact,
+                                  title: const Text('Light'),
+                                  leading: Radio<ThemeMode>(
+                                    value: ThemeMode.light,
+                                  ),
+                                ),
+                                ListTile(
+                                  dense: true,
+                                  visualDensity: VisualDensity.compact,
+                                  title: const Text('Dark'),
+                                  leading: Radio<ThemeMode>(
+                                    value: ThemeMode.dark,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    if (widget.viewModel != null) ...[
+                      const SizedBox(height: 16),
+                      _SettingsSection(
+                        title: 'Data Configuration',
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Data Format',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 8),
+                            RadioGroup<DataFormat>(
+                              groupValue: _selectedDataFormat,
+                              onChanged: widget.viewModel?.isConnected == true
+                                  ? (_) {}
+                                  : (DataFormat? value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          _selectedDataFormat = value;
+                                        });
+                                        widget.viewModel?.setDataFormat(value);
+                                      }
+                                    },
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('JSON'),
+                                    leading: Radio<DataFormat>(
+                                      value: DataFormat.json,
+                                      enabled:
+                                          widget.viewModel?.isConnected != true,
+                                    ),
+                                  ),
+                                  ListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('CSV'),
+                                    leading: Radio<DataFormat>(
+                                      value: DataFormat.csv,
+                                      enabled:
+                                          widget.viewModel?.isConnected != true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (widget.viewModel?.isConnected == true)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  '(Cannot change while connected)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              if (widget.viewModel != null) ...[
-                const SizedBox(height: 16),
-                _SettingsSection(
-                  title: 'Data Configuration',
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Data Format', style: TextStyle(fontSize: 14)),
-                      const SizedBox(height: 8),
-                      RadioGroup<DataFormat>(
-                        groupValue: _selectedDataFormat,
-                        onChanged: widget.viewModel?.isConnected == true
-                            ? (_) {}
-                            : (DataFormat? value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedDataFormat = value;
-                                  });
-                                  widget.viewModel?.setDataFormat(value);
-                                }
-                              },
+              const SizedBox(width: 16),
+              // Right Column
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.viewModel != null) ...[
+                      _SettingsSection(
+                        title: 'Sampling',
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ListTile(
-                              dense: true,
-                              visualDensity: VisualDensity.compact,
-                              title: const Text('JSON'),
-                              leading: Radio<DataFormat>(
-                                value: DataFormat.json,
-                                enabled: widget.viewModel?.isConnected != true,
+                            const Text(
+                              'Reduction Method',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 8),
+                            RadioGroup<ReductionMethod>(
+                              groupValue: _reductionMethod,
+                              onChanged: widget.viewModel?.isRecording == true
+                                  ? (_) {}
+                                  : (ReductionMethod? value) {
+                                      if (value != null) {
+                                        setState(() {
+                                          _reductionMethod = value;
+                                        });
+                                        widget.viewModel?.setReductionMethod(
+                                          value,
+                                        );
+                                      }
+                                    },
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('Average'),
+                                    leading: Radio<ReductionMethod>(
+                                      value: ReductionMethod.average,
+                                      enabled:
+                                          widget.viewModel?.isRecording != true,
+                                    ),
+                                  ),
+                                  ListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('Maximum'),
+                                    leading: Radio<ReductionMethod>(
+                                      value: ReductionMethod.max,
+                                      enabled:
+                                          widget.viewModel?.isRecording != true,
+                                    ),
+                                  ),
+                                  ListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: const Text('Minimum'),
+                                    leading: Radio<ReductionMethod>(
+                                      value: ReductionMethod.min,
+                                      enabled:
+                                          widget.viewModel?.isRecording != true,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            ListTile(
-                              dense: true,
-                              visualDensity: VisualDensity.compact,
-                              title: const Text('CSV'),
-                              leading: Radio<DataFormat>(
-                                value: DataFormat.csv,
-                                enabled: widget.viewModel?.isConnected != true,
+                            if (widget.viewModel?.isRecording == true)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  '(Cannot change while recording)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
                               ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _SettingsSection(
+                        title: 'Graph Settings',
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Visible Range',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Slider(
+                                    value: _visibleRange,
+                                    min: 10,
+                                    max: 300,
+                                    divisions: 29,
+                                    label: '${_visibleRange.round()}s',
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _visibleRange = value;
+                                      });
+                                      widget.viewModel?.setVisibleRange(value);
+                                    },
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 45,
+                                  child: Text(
+                                    '${_visibleRange.round()}s',
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      if (widget.viewModel?.isConnected == true)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            '(Cannot change while connected)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
                     ],
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _SettingsSection(
-                  title: 'Sampling',
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Reduction Method',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButton<ReductionMethod>(
-                        value: _reductionMethod,
-                        isExpanded: true,
-                        onChanged: widget.viewModel?.isRecording == true
-                            ? null
-                            : (ReductionMethod? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    _reductionMethod = newValue;
-                                  });
-                                  widget.viewModel?.setReductionMethod(
-                                    newValue,
-                                  );
-                                }
-                              },
-                        items: const [
-                          DropdownMenuItem(
-                            value: ReductionMethod.average,
-                            child: Text('Average'),
-                          ),
-                          DropdownMenuItem(
-                            value: ReductionMethod.max,
-                            child: Text('Maximum'),
-                          ),
-                          DropdownMenuItem(
-                            value: ReductionMethod.min,
-                            child: Text('Minimum'),
-                          ),
-                        ],
-                      ),
-                      if (widget.viewModel?.isRecording == true)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            '(Cannot change while recording)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _SettingsSection(
-                  title: 'Graph Settings',
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Visible Range',
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Slider(
-                              value: _visibleRange,
-                              min: 10,
-                              max: 300,
-                              divisions: 29,
-                              label: '${_visibleRange.round()}s',
-                              onChanged: (value) {
-                                setState(() {
-                                  _visibleRange = value;
-                                });
-                                widget.viewModel?.setVisibleRange(value);
-                              },
-                            ),
-                          ),
-                          SizedBox(
-                            width: 45,
-                            child: Text(
-                              '${_visibleRange.round()}s',
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         ),
