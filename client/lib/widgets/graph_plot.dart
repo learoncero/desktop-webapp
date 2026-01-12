@@ -117,6 +117,9 @@ class LineChartGraph extends StatelessWidget {
       padding: const EdgeInsets.only(left: 12, bottom: 12, right: 20, top: 20),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
+            return const SizedBox.shrink();
+          }
           return LineChart(
             LineChartData(
               lineTouchData: LineTouchData(

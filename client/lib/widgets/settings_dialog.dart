@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
+import 'package:sensor_dash/services/sampling_manager.dart';
 import '../main.dart';
 
 class SettingsDialog extends StatefulWidget {
@@ -20,6 +21,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
   late ThemeMode _selectedTheme;
   late double _visibleRange;
   late DataFormat _selectedDataFormat;
+  late ReductionMethod _reductionMethod;
 
   @override
   void initState() {
@@ -27,6 +29,8 @@ class _SettingsDialogState extends State<SettingsDialog> {
     _selectedTheme = widget.currentThemeMode;
     _visibleRange = widget.viewModel?.visibleRange ?? 60;
     _selectedDataFormat = widget.viewModel?.dataFormat ?? DataFormat.json;
+    _reductionMethod =
+        widget.viewModel?.reductionMethod ?? ReductionMethod.average;
   }
 
   @override
@@ -136,6 +140,63 @@ class _SettingsDialogState extends State<SettingsDialog> {
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
                             '(Cannot change while connected)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SettingsSection(
+                  title: 'Sampling',
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Reduction Method',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButton<ReductionMethod>(
+                        value: _reductionMethod,
+                        isExpanded: true,
+                        onChanged: widget.viewModel?.isRecording == true
+                            ? null
+                            : (ReductionMethod? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _reductionMethod = newValue;
+                                  });
+                                  widget.viewModel?.setReductionMethod(
+                                    newValue,
+                                  );
+                                }
+                              },
+                        items: const [
+                          DropdownMenuItem(
+                            value: ReductionMethod.average,
+                            child: Text('Average'),
+                          ),
+                          DropdownMenuItem(
+                            value: ReductionMethod.max,
+                            child: Text('Maximum'),
+                          ),
+                          DropdownMenuItem(
+                            value: ReductionMethod.min,
+                            child: Text('Minimum'),
+                          ),
+                        ],
+                      ),
+                      if (widget.viewModel?.isRecording == true)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            '(Cannot change while recording)',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],

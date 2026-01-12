@@ -2,14 +2,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:menu_bar/menu_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import '../widgets/settings_dialog.dart';
 import '../main.dart';
 
-class AppMenu extends StatelessWidget {
+class AppMenu extends StatelessWidget implements PreferredSizeWidget {
   final ThemeMode currentThemeMode;
   final ConnectionBaseViewModel? connectionBaseViewModel;
 
@@ -18,6 +17,9 @@ class AppMenu extends StatelessWidget {
     required this.currentThemeMode,
     this.connectionBaseViewModel,
   });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(30);
 
   Future<void> _showAbout(BuildContext context) async {
     final info = await PackageInfo.fromPlatform();
@@ -100,13 +102,19 @@ class AppMenu extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Overview',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   'This application captures, visualizes and optionally records sensor data coming from serial or UDP sources. It provides a live graph, connection management, and CSV recording for later analysis. The interface is optimized for desktop use (Windows/macOS/Linux).',
                 ),
                 const SizedBox(height: 12),
-                const Text('Usage', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Usage',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   '1. Select a connection type from the menu (Serial or UDP).\n'
@@ -115,7 +123,10 @@ class AppMenu extends StatelessWidget {
                   '4. To record data, open the Recording controls (menu or toolbar) and enable CSV recording before or during a session. Recorded files are saved to the configured folder.',
                 ),
                 const SizedBox(height: 12),
-                const Text('CSV recording behavior', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'CSV recording behavior',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   '- Each recorded CSV row represents one sample set with a timestamp and sensor values.\n'
@@ -124,25 +135,34 @@ class AppMenu extends StatelessWidget {
                   "- When disk is full or write errors occur, recording stops and an error notification is shown.",
                 ),
                 const SizedBox(height: 12),
-                const Text('Known limitations', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Known limitations',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   '- Real-time plotting is intended for moderate sample rates; very high rates may drop frames or samples.\n'
-                  '- Serial port detection depends on OS drivers; some devices may require additional drivers.\n'
-                  '- UDP reception is best-effort; packet loss on the network will result in missing samples.\n'
-                  '- There is no built-in data replay UI — use the CSV files for offline analysis.',
+                  "- Serial port detection depends on OS drivers; some devices may require additional drivers.\n"
+                  "- UDP reception is best-effort; packet loss on the network will result in missing samples.\n"
+                  "- There is no built-in data replay UI — use the CSV files for offline analysis.",
                 ),
                 const SizedBox(height: 12),
-                const Text('Troubleshooting', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Troubleshooting',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   '- No data shown after Connect: verify cable/device power, correct port/baud and that only one process uses the port.\n'
-                  '- Unexpected CSV format: check recording settings and look at the first lines of the CSV file with a text editor.\n'
-                  '- App does not detect serial ports on Windows: try restarting the machine or reinstalling the device driver; run the app as Administrator if permissions are restricted.\n'
-                  '- If the graph freezes or becomes slow: try lowering sample rate or filter out unused channels. Restarting the app can help recover from resource leaks.',
+                  "- Unexpected CSV format: check recording settings and look at the first lines of the CSV file with a text editor.\n"
+                  "- App does not detect serial ports on Windows: try restarting the machine or reinstalling the device driver; run the app as Administrator if permissions are restricted.\n"
+                  "- If the graph freezes or becomes slow: try lowering sample rate or filter out unused channels. Restarting the app can help recover from resource leaks.",
                 ),
                 const SizedBox(height: 40),
-                const Text('Support & Feedback', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Support & Feedback',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   'If problems persist, consult the project README or open an issue on GitHub: https://github.com/learoncero/desktop-webapp with logs and a short description of steps to reproduce.',
@@ -163,68 +183,148 @@ class AppMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: MenuBarWidget(
-            barButtons: [
-              BarButton(
-                text: const Text("File"),
-                submenu: SubMenu(
-                  menuItems: [
-                    MenuButton(
-                      text: const Text("Load CSV"),
-                      onTap: () => _loadCsvFile(context),
-                    ),
-                    const MenuDivider(),
-                    MenuButton(
-                      text: const Text("Exit"),
-                      onTap: () {
-                        ServicesBinding.instance.exitApplication(
-                          AppExitType.required,
-                        );
-                      },
-                    ),
-                  ],
-                ),
+    return Container(
+      width: double.infinity,
+      height: 30, // definite height for the app bar area
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // File menu
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                tooltip: '',
+                menuPadding: EdgeInsets.zero,
+                position: PopupMenuPosition.under,
+                child: _HoverMenuLabel(label: 'File'),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'load',
+                    height: 32,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('Load CSV'),
+                  ),
+                  const PopupMenuDivider(height: 1),
+                  const PopupMenuItem(
+                    value: 'exit',
+                    height: 32,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('Exit'),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'load') {
+                    _loadCsvFile(context);
+                  } else if (value == 'exit') {
+                    ServicesBinding.instance.exitApplication(
+                      AppExitType.required,
+                    );
+                  }
+                },
               ),
-              BarButton(
-                text: const Text("Settings"),
-                submenu: SubMenu(
-                  menuItems: [
-                    MenuButton(
-                      text: const Text("Settings"),
-                      onTap: () {
-                        _showSettings(context);
-                      },
-                    ),
-                  ],
-                ),
+
+              // Settings menu
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                tooltip: '',
+                menuPadding: EdgeInsets.zero,
+                position: PopupMenuPosition.under,
+                child: _HoverMenuLabel(label: 'Settings'),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'settings',
+                    height: 32,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('Settings'),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'settings') _showSettings(context);
+                },
               ),
-              BarButton(
-                text: const Text("Help"),
-                submenu: SubMenu(
-                  menuItems: [
-                    MenuButton(
-                      text: const Text("Help"),
-                      onTap: () {
-                        _showHelp(context);
-                      },
-                    ),
-                    const MenuDivider(),
-                    MenuButton(
-                      text: const Text("About"),
-                      onTap: () => _showAbout(context),
-                    ),
-                  ],
-                ),
+
+              // Help menu
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                tooltip: '',
+                menuPadding: EdgeInsets.zero,
+                position: PopupMenuPosition.under,
+                child: _HoverMenuLabel(label: 'Help'),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'help',
+                    height: 32,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('Help'),
+                  ),
+                  const PopupMenuDivider(height: 1),
+                  const PopupMenuItem(
+                    value: 'about',
+                    height: 32,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('About'),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'help') _showHelp(context);
+                  if (value == 'about') _showAbout(context);
+                },
               ),
             ],
-
-            child: Container(),
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _HoverMenuLabel extends StatefulWidget {
+  final String label;
+  const _HoverMenuLabel({required this.label});
+
+  @override
+  State<_HoverMenuLabel> createState() => _HoverMenuLabelState();
+}
+
+class _HoverMenuLabelState extends State<_HoverMenuLabel> {
+  bool _hover = false;
+
+  void _onEnter(PointerEnterEvent _) => setState(() => _hover = true);
+  void _onExit(PointerExitEvent _) => setState(() => _hover = false);
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).colorScheme.surfaceContainerHighest;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final int a = (0.10 * 255).round();
+    final int r = ((onSurface.r * 255.0).round()).clamp(0, 255);
+    final int g = ((onSurface.g * 255.0).round()).clamp(0, 255);
+    final int b = ((onSurface.b * 255.0).round()).clamp(0, 255);
+    final overlay = Color.fromARGB(a, r, g, b);
+    final hoverColor = _hover
+        ? Color.alphaBlend(overlay, base)
+        : Colors.transparent;
+
+    return MouseRegion(
+      onEnter: _onEnter,
+      onExit: _onExit,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 0),
+        child: SizedBox(
+          height: double.infinity,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            color: hoverColor,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Text(widget.label),
+          ),
+        ),
+      ),
     );
   }
 }

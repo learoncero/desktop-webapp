@@ -1,12 +1,22 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'package:sensor_dash/services/udp_source.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 class UdpConnectionViewModel extends ConnectionBaseViewModel {
-  UdpConnectionViewModel() {
+  final addressController = TextEditingController();
+  final portController = TextEditingController();
+
+  UdpConnectionViewModel({
+    UdpSource Function(String, int, {required DataFormat dataFormat})?
+    udpFactory,
+  }) {
+    addressController.text = _address;
+    portController.text = _port == 0 ? "" : _port.toString();
+
     // Initialize a cross-platform default save folder (user can still change it)
     initDefaultSaveFolder();
   }
@@ -106,6 +116,7 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
 
         // Initialize sampling manager (samples every 1 second)
         _samplingManager = SamplingManager(
+          reductionMethod: reductionMethod,
           onSampleReady: (samples) async {
             setCurrentSamples(samples);
             for (var sample in samples) {
@@ -193,5 +204,11 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
 
     super.disconnect();
     notifyListeners();
+  }
+
+  @override
+  void setReductionMethod(ReductionMethod method) {
+    super.setReductionMethod(method);
+    _samplingManager?.reductionMethod = method;
   }
 }

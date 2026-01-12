@@ -76,6 +76,7 @@ jobs:
           Terminal=false
           Type=Application
           Categories=Utility;
+          StartupWMClass=com.example.sensordash
           EOF
 
           # App icon
