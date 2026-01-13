@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -12,11 +13,12 @@ void main() {
     () async {
       final tempDir = await Directory.systemTemp.createTemp('csvrec_test');
       final vm = SerialConnectionViewModel(
-        serialFactory: (port, baud, {simulate = false}) {
+        serialFactory: (port, baud, {simulate = false, dataFormat = DataFormat.json}) {
           return SerialSource(
             port,
             baud,
             simulate: true,
+            dataFormat: dataFormat,
           ); // TEST: always simulated
         },
       );
@@ -74,7 +76,8 @@ void main() {
       expect(
         headerParts.length,
         equals(1 + 2 * 2), // 1 timestamp + 2 sensors * (unit + value)
-        reason: 'Header should contain timestamp plus unit/value columns for each sensor',
+        reason:
+            'Header should contain timestamp plus unit/value columns for each sensor',
       );
 
       final expectedHeader = [
@@ -82,7 +85,7 @@ void main() {
         'temperature_unit',
         'temperature_value',
         'humidity_unit',
-        'humidity_value'
+        'humidity_value',
       ];
 
       expect(
@@ -98,12 +101,17 @@ void main() {
         expect(
           parts.length,
           equals(expectedHeader.length),
-          reason: 'Each CSV data row should have ${expectedHeader.length} comma-separated fields',
+          reason:
+              'Each CSV data row should have ${expectedHeader.length} comma-separated fields',
         );
 
         // First field should be an integer unix timestamp
         final ts = parts[0].trim();
-        expect(int.tryParse(ts), isNotNull, reason: 'First field should be a unix timestamp integer');
+        expect(
+          int.tryParse(ts),
+          isNotNull,
+          reason: 'First field should be a unix timestamp integer',
+        );
 
         // The remaining fields (unit/value) should be quoted strings
         for (var j = 1; j < parts.length; j++) {
@@ -116,7 +124,11 @@ void main() {
 
           // Ensure quoted field does not contain raw quotes inside (they should be escaped)
           final inner = field.substring(1, field.length - 1);
-          expect(inner.contains('"'), isFalse, reason: 'Quoted field should not contain raw quotes');
+          expect(
+            inner.contains('"'),
+            isFalse,
+            reason: 'Quoted field should not contain raw quotes',
+          );
         }
 
         final tempUnit = parts[1].trim();
@@ -124,15 +136,30 @@ void main() {
         final humUnit = parts[3].trim();
         final humValue = parts[4].trim();
 
-        String unquote(String s) => s.length >= 2 && s.startsWith('"') && s.endsWith('"') ? s.substring(1, s.length - 1) : s;
+        String unquote(String s) =>
+            s.length >= 2 && s.startsWith('"') && s.endsWith('"')
+            ? s.substring(1, s.length - 1)
+            : s;
 
-        expect(unquote(tempUnit), equals('°C'), reason: 'Temperature unit should be °C in simulation');
-        expect(unquote(humUnit), equals('%'), reason: 'Humidity unit should be % in simulation');
+        expect(
+          unquote(tempUnit),
+          equals('°C'),
+          reason: 'Temperature unit should be °C in simulation',
+        );
+        expect(
+          unquote(humUnit),
+          equals('%'),
+          reason: 'Humidity unit should be % in simulation',
+        );
 
         final tempNum = double.tryParse(unquote(tempValue));
         final humNum = double.tryParse(unquote(humValue));
 
-        expect(tempNum, isNotNull, reason: 'Temperature value should be a number');
+        expect(
+          tempNum,
+          isNotNull,
+          reason: 'Temperature value should be a number',
+        );
         expect(humNum, isNotNull, reason: 'Humidity value should be a number');
       }
 
@@ -148,7 +175,11 @@ void main() {
         timestamps.add(t!);
       }
       final uniqueTs = timestamps.toSet();
-      expect(uniqueTs.length, equals(timestamps.length), reason: 'There should be no duplicate timestamps in CSV data rows');
+      expect(
+        uniqueTs.length,
+        equals(timestamps.length),
+        reason: 'There should be no duplicate timestamps in CSV data rows',
+      );
 
       // Check for completely empty sensor fields (all quoted empty strings)
       bool anyAllEmpty = false;
@@ -162,7 +193,12 @@ void main() {
           break;
         }
       }
-      expect(anyAllEmpty, isFalse, reason: 'There should be no data row where all sensor fields are empty (e.g., timestamp, "", "")');
+      expect(
+        anyAllEmpty,
+        isFalse,
+        reason:
+            'There should be no data row where all sensor fields are empty (e.g., timestamp, "", "")',
+      );
 
       try {
         tempDir.deleteSync(recursive: true);

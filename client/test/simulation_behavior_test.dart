@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 class FakeSerialSource extends SerialSource {
   final bool _connectResult;
@@ -30,7 +31,7 @@ void main() {
 
   test('no simulation by default when connection fails', () async {
     final vm = SerialConnectionViewModel(
-      serialFactory: (port, baud, {simulate = false}) {
+      serialFactory: (port, baud, {simulate = false, dataFormat = DataFormat.json}) {
         // Always return a fake that fails to connect
         return FakeSerialSource(
           port,
@@ -53,9 +54,9 @@ void main() {
       final tempDir = await Directory.systemTemp.createTemp('csvrec_test2');
 
       final vm = SerialConnectionViewModel(
-        serialFactory: (port, baud, {simulate = false}) {
+        serialFactory: (port, baud, {simulate = false, dataFormat = DataFormat.json}) {
           // Return the real SerialSource in simulate mode for the test
-          return SerialSource(port, baud, simulate: true);
+          return SerialSource(port, baud, simulate: true, dataFormat: dataFormat);
         },
       );
 

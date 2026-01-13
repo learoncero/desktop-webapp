@@ -1,18 +1,19 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'package:sensor_dash/services/udp_source.dart';
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 class UdpConnectionViewModel extends ConnectionBaseViewModel {
-  final UdpSource Function(String address, int port) _udpFactory;
-
   final addressController = TextEditingController();
   final portController = TextEditingController();
 
-  UdpConnectionViewModel({UdpSource Function(String, int)? serialFactory})
-    : _udpFactory = serialFactory ?? ((p, b) => UdpSource(p, b)) {
+  UdpConnectionViewModel({
+    UdpSource Function(String, int, {required DataFormat dataFormat})?
+    udpFactory,
+  }) {
     addressController.text = _address;
     portController.text = _port == 0 ? "" : _port.toString();
 
@@ -35,12 +36,11 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
     }
 
     try {
-      _udp = _udpFactory(_address, _port);
+      _udp = UdpSource(_address, _port, dataFormat: dataFormat);
 
       var success = _udp!.connect(
         onPacket: (packet) {
           setLastPaket(packet);
-          setErrorMessage(null);
 
           // Add to packet stream for any listeners (e.g., recorder)
           try {
@@ -55,12 +55,12 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
+            clearError();
           } else {
-            // Check if sensors have changed
-            final currentSet = availableSensors.toSet();
-            final newSet = sensorNames.toSet();
+            // Check if sensors have changed using listEquals
+            final sensorsChanged = !listEquals(availableSensors, sensorNames);
 
-            if (currentSet != newSet) {
+            if (sensorsChanged) {
               if (!isRecording) {
                 // Update sensors if not recording
                 setAvailableSensors(sensorNames);
@@ -72,12 +72,20 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
+                clearError();
               } else {
-                // Show warning if recording and sensors changed
-                setErrorMessage(
-                  'Sensors changed during recording. Please stop recording to update.',
-                );
+                // Show warning once if recording and sensors changed
+                if (errorMessage !=
+                    'Sensors changed during recording. Please stop recording to update.') {
+                  setErrorMessage(
+                    'Sensors changed during recording. Please stop recording to update.',
+                  );
+                  notifyListeners();
+                }
               }
+            } else {
+              // Sensors match, clear any previous error
+              clearError();
             }
           }
 
@@ -93,9 +101,10 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
           }
         },
         onError: (error) {
-          log('Serial error: $error');
-          setErrorMessage('Connection lost: Port disconnected.');
+          log('UDP error: $error');
+          setErrorMessage(error);
           disconnect();
+          notifyListeners();
         },
       );
 
@@ -115,7 +124,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                 sample.value,
                 sample.dataUnit,
               );
-              setCurrentSensorUnit(sample.dataUnit);
 
               if (graphStartTime.isEmpty && isRecording) {
                 setGraphStartTime(

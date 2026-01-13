@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
 import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
+import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/models/sensor_packet.dart';
 
@@ -40,10 +41,11 @@ void main() {
 
       late FakeSerialSource fake;
       final vm = SerialConnectionViewModel(
-        serialFactory: (port, baud, {simulate = false}) {
-          fake = FakeSerialSource(port, baud, simulate: simulate);
-          return fake;
-        },
+        serialFactory:
+            (port, baud, {simulate = false, dataFormat = DataFormat.json}) {
+              fake = FakeSerialSource(port, baud, simulate: simulate);
+              return fake;
+            },
       );
 
       // Prepare save folder so recorder can start

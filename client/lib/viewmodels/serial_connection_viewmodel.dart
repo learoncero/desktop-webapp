@@ -2,19 +2,26 @@ import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'dart:developer';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
 
 class SerialConnectionViewModel extends ConnectionBaseViewModel {
-  final SerialSource Function(String port, int baud, {bool simulate})
+  final SerialSource Function(
+    String port,
+    int baud, {
+    bool simulate,
+    DataFormat dataFormat,
+  })
   _serialFactory;
 
   SerialConnectionViewModel({
-    SerialSource Function(String, int, {bool simulate})? serialFactory,
+    SerialSource Function(String, int, {bool simulate, DataFormat dataFormat})?
+    serialFactory,
   }) : _serialFactory =
            serialFactory ??
-           ((p, b, {simulate = false}) =>
-               SerialSource(p, b, simulate: simulate)) {
+           ((p, b, {simulate = false, dataFormat = DataFormat.json}) =>
+               SerialSource(p, b, simulate: simulate, dataFormat: dataFormat)) {
     // Initialize a cross-platform default save folder (user can still change it)
     initDefaultSaveFolder();
   }
@@ -84,6 +91,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
           _selectedPort!,
           _selectedBaudrate,
           simulate: true,
+          dataFormat: dataFormat,
         );
         _isSimulated = true;
         final simSuccess = _serial!.connect(
@@ -96,7 +104,9 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
             notifyListeners();
           },
           onError: (error) {
-            setErrorMessage('Simulation error: $error');
+            log('Serial error: $error');
+            setErrorMessage(error);
+            disconnect();
             notifyListeners();
           },
         );
@@ -162,6 +172,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
         _selectedPort!,
         _selectedBaudrate,
         simulate: false,
+        dataFormat: dataFormat,
       );
       _isSimulated = _serial?.simulate ?? false;
 
@@ -183,12 +194,12 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
+            clearError();
           } else {
-            // Check if sensors have changed
-            final currentSet = availableSensors.toSet();
-            final newSet = sensorNames.toSet();
+            // Check if sensors have changed using listEquals
+            final sensorsChanged = !listEquals(availableSensors, sensorNames);
 
-            if (currentSet != newSet) {
+            if (sensorsChanged) {
               if (!isRecording) {
                 // Update sensors if not recording
                 setAvailableSensors(sensorNames);
@@ -200,12 +211,20 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
+                clearError();
               } else {
-                // Show warning if recording and sensors changed
-                setErrorMessage(
-                  'Sensors changed during recording. Please stop recording to update.',
-                );
+                // Show warning once if recording and sensors changed
+                if (errorMessage !=
+                    'Sensors changed during recording. Please stop recording to update.') {
+                  setErrorMessage(
+                    'Sensors changed during recording. Please stop recording to update.',
+                  );
+                  notifyListeners();
+                }
               }
+            } else {
+              // Sensors match, clear any previous error
+              clearError();
             }
           }
 
@@ -222,17 +241,19 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
         },
         onError: (error) {
           log('Serial error: $error');
-          setErrorMessage('Connection lost: Port $_selectedPort disconnected.');
+          setErrorMessage(error);
           disconnect();
+          notifyListeners();
         },
       );
 
       if (!success && allowSimulationIfNoDevice) {
-        // Try simulation fallback via injected factory
-        _serial = _serialFactory(
+        // Try simulation fallback
+        _serial = SerialSource(
           _selectedPort!,
           _selectedBaudrate,
           simulate: true,
+          dataFormat: dataFormat,
         );
         _isSimulated = _serial?.simulate ?? true;
         success = _serial!.connect(
@@ -320,6 +341,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
           _selectedPort!,
           _selectedBaudrate,
           simulate: true,
+          dataFormat: dataFormat,
         );
         _isSimulated = _serial?.simulate ?? true;
         final simSuccess = _serial!.connect(
