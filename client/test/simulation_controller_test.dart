@@ -7,7 +7,7 @@ import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/services/csv_recorder.dart';
 
 class FakeSerialSource extends SerialSource {
-  FakeSerialSource(String portName, int baudRate, {bool simulate = false}) : super(portName, baudRate, simulate: simulate);
+  FakeSerialSource(super.portName, super.baudRate, {super.simulate = false});
 
   @override
   bool connect({required void Function(SensorPacket) onPacket, ErrorCallback? onError}) {
@@ -24,9 +24,6 @@ class FakeSerialSource extends SerialSource {
 class FakeCsvRecorder extends CsvRecorder {
   int recordCalls = 0;
   FakeCsvRecorder() : super(folderPath: '.', baseFileName: 'test', sensors: []);
-
-  @override
-  bool get sensorsLocked => super.sensorsLocked;
 
   @override
   void setInitialSensors(List<String> initialSensors) {
@@ -51,12 +48,9 @@ void main() {
       baud: 115200,
     );
 
-    bool setLastCalled = false;
-    String? lastError;
-
     final success = controller.connect(
-      setLastPaket: (packet) => setLastCalled = true,
-      setErrorMessage: (msg) => lastError = msg,
+      setLastPaket: (_) {},
+      setErrorMessage: (_) {},
       addPacketToPacketController: (p) {},
       setCurrentSamples: (s) {},
       addSampleToGraph: (a, b, c) {},
