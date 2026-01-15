@@ -37,11 +37,11 @@ class LineChartGraph extends StatelessWidget {
     return SideTitleWidget(
       meta: meta,
       space: 16,
-      child: Text(_formatYTextValue(value), style: style),
+      child: Text(formatYTextValue(value), style: style),
     );
   }
 
-  String _formatYTextValue(double value) {
+  String formatYTextValue(double value) {
     if (value.abs() >= 1000) {
       return value.toStringAsFixed(0);
     } else if (value.abs() >= 100) {
@@ -51,7 +51,7 @@ class LineChartGraph extends StatelessWidget {
     }
   }
 
-  double _calculateIntervalX() {
+  double calculateIntervalX() {
     if (visibleRange <= 10) return 1.0;
     if (visibleRange <= 30) return 2.0;
     if (visibleRange <= 60) return 5.0;
@@ -60,7 +60,7 @@ class LineChartGraph extends StatelessWidget {
     return 20.0; // For 180+ seconds, use 1 minute intervals
   }
 
-  double _calculateIntervalY(double minY, double maxY) {
+  double calculateIntervalY(double minY, double maxY) {
     final range = maxY - minY;
 
     if (range == 0) {
@@ -97,22 +97,19 @@ class LineChartGraph extends StatelessWidget {
     return fractionInterval * exponent;
   }
 
+  double get minYValue =>
+      spots.isEmpty ? 0 : spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
+  double get maxYValue =>
+      spots.isEmpty ? 1 : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+
+  double get intervalX => calculateIntervalX();
+  double get intervalY => calculateIntervalY(minYValue, maxYValue);
+
+  double get minY => (minYValue / intervalY).floor() * intervalY;
+  double get maxY => (maxYValue / intervalY).ceil() * intervalY;
+
   @override
   Widget build(BuildContext context) {
-    final double minYValue = spots.isEmpty
-        ? 0
-        : spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
-
-    final double maxYValue = spots.isEmpty
-        ? 1
-        : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
-
-    final intervalX = _calculateIntervalX();
-
-    final intervalY = _calculateIntervalY(minYValue, maxYValue);
-    final double minY = (minYValue / intervalY).floor() * intervalY;
-    final double maxY = (maxYValue / intervalY).ceil() * intervalY;
-
     return Padding(
       padding: const EdgeInsets.only(left: 12, bottom: 12, right: 20, top: 20),
       child: LayoutBuilder(
@@ -150,7 +147,7 @@ class LineChartGraph extends StatelessWidget {
                 LineChartBarData(
                   color: Theme.of(context).colorScheme.primary,
                   spots: spots,
-                  isCurved: true,
+                  isCurved: false,
                   isStrokeCapRound: true,
                   barWidth: 3,
                   belowBarData: BarAreaData(show: false),
@@ -207,6 +204,7 @@ class LineChartGraph extends StatelessWidget {
               ),
               borderData: FlBorderData(show: false),
             ),
+            duration: Duration(milliseconds: 0),
           );
         },
       ),

@@ -389,7 +389,6 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   }
 
   // Plot
-
   void setVisibleRange(double range) {
     if (range < 10 || range > 300) return;
     _visibleRange = range;
