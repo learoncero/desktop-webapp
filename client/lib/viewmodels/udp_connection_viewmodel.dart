@@ -165,7 +165,9 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
         return null; // Success
       } else {
         _udp = null;
-        setErrorMessage('Failed to open UDP connection');
+        setErrorMessage(
+          'Failed to open UDP connection. Please check address and port',
+        );
         notifyListeners();
         return errorMessage;
       }
@@ -188,6 +190,15 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
       _port = parsedPort;
     }
     notifyListeners();
+  }
+
+  bool canConnect() {
+    if (addressController.text.trim().isNotEmpty &&
+        portController.text.trim().isNotEmpty &&
+        int.tryParse(portController.text) != null) {
+      return true;
+    }
+    return false;
   }
 
   @override

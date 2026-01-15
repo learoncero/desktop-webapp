@@ -102,9 +102,11 @@ class UdpConnectionPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 24),
                 ElevatedButton(
-                  onPressed: viewModel.isConnected
-                      ? () => handleDisconnect(context)
-                      : () => handleConnect(context),
+                  onPressed: viewModel.canConnect()
+                      ? (viewModel.isConnected
+                            ? () => handleDisconnect(context)
+                            : () => handleConnect(context))
+                      : null,
                   child: Text(viewModel.isConnected ? 'Disconnect' : 'Connect'),
                 ),
               ],
