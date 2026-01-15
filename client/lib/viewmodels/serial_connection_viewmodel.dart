@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
+import 'package:sensor_dash/services/simulation_controller.dart';
 
 class SerialConnectionViewModel extends ConnectionBaseViewModel {
   final SerialSource Function(
@@ -33,6 +34,9 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
   // Sampling state
   SamplingManager? _samplingManager;
+
+  // Simulation controller (phase B) holds simulation lifecycle and routing
+  SimulationController? _simulationController;
 
   bool _isSimulated = false;
 
@@ -87,75 +91,36 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
     try {
       if (forceSimulate) {
-        _serial = _serialFactory(
-          _selectedPort!,
-          _selectedBaudrate,
-          simulate: true,
+        _simulationController = SimulationController(
+          serialFactory: _serialFactory,
+          port: _selectedPort!,
+          baud: _selectedBaudrate,
+          reductionMethod: reductionMethod,
           dataFormat: dataFormat,
         );
-        _isSimulated = true;
-        final simSuccess = _serial!.connect(
-          onPacket: (packet) {
-            setLastPaket(packet);
-            setErrorMessage(null);
-            try {
-              addPacketToPacketController(packet);
-            } catch (_) {}
-            notifyListeners();
-          },
-          onError: (error) {
-            log('Serial error: $error');
-            setErrorMessage(error);
-            disconnect();
-            notifyListeners();
-          },
+
+        final simSuccess = _simulationController!.connect(
+          setLastPaket: setLastPaket,
+          setErrorMessage: setErrorMessage,
+          addPacketToPacketController: addPacketToPacketController,
+          setCurrentSamples: setCurrentSamples,
+          addSampleToGraph: addSampleToGraph,
+          getGraphStartTime: () => graphStartTime,
+          isRecording: () => isRecording,
+          setGraphStartTime: setGraphStartTime,
+          getRecorder: () => recorder,
+          addToGraphIndex: addToGraphIndex,
+          notifyListeners: notifyListeners,
         );
 
         if (simSuccess) {
+          _serial = _simulationController!.source;
+          _isSimulated = _simulationController!.isSimulated;
+          _samplingManager = _simulationController!.samplingManager;
+
           setConnected(true);
           setErrorMessage(null);
           notifyListeners();
-
-          // Initialize sampling manager (samples every 1 second)
-          _samplingManager = SamplingManager(
-            onSampleReady: (samples) async {
-              setCurrentSamples(samples);
-
-              for (var sample in samples) {
-                // Add sample to graph if recording
-                addSampleToGraph(
-                  sample.dataStream,
-                  sample.value,
-                  sample.dataUnit,
-                );
-
-                if (graphStartTime.isEmpty && isRecording) {
-                  setGraphStartTime(
-                    "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                    "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}",
-                  );
-                }
-
-                // Forward sample to recorder if recording
-                try {
-                  if (recorder != null && isRecording) {
-                    await recorder!.recordSample(
-                      sample.dataStream,
-                      sample.dataUnit,
-                      sample,
-                    );
-                  }
-                } catch (e) {
-                  // ignore recording errors for now
-                }
-              }
-
-              if (recorder != null && isRecording) {
-                addToGraphIndex(1);
-              }
-              notifyListeners();
-            },
-          );
 
           maybeStartRecorder();
           return null;
@@ -248,28 +213,33 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       );
 
       if (!success && allowSimulationIfNoDevice) {
-        // Try simulation fallback
-        _serial = SerialSource(
-          _selectedPort!,
-          _selectedBaudrate,
-          simulate: true,
+        _simulationController = SimulationController(
+          serialFactory: _serialFactory,
+          port: _selectedPort!,
+          baud: _selectedBaudrate,
+          reductionMethod: reductionMethod,
           dataFormat: dataFormat,
         );
-        _isSimulated = _serial?.simulate ?? true;
-        success = _serial!.connect(
-          onPacket: (packet) {
-            setLastPaket(packet);
-            setErrorMessage(null);
-            try {
-              addPacketToPacketController(packet);
-            } catch (_) {}
-            notifyListeners();
-          },
-          onError: (error) {
-            setErrorMessage('Simulation error: $error');
-            notifyListeners();
-          },
+
+        final simSuccess = _simulationController!.connect(
+          setLastPaket: setLastPaket,
+          setErrorMessage: setErrorMessage,
+          addPacketToPacketController: addPacketToPacketController,
+          setCurrentSamples: setCurrentSamples,
+          addSampleToGraph: addSampleToGraph,
+          getGraphStartTime: () => graphStartTime,
+          isRecording: () => isRecording,
+          setGraphStartTime: setGraphStartTime,
+          getRecorder: () => recorder,
+          addToGraphIndex: addToGraphIndex,
+          notifyListeners: notifyListeners,
         );
+
+        if (simSuccess) {
+          _serial = _simulationController!.source;
+          _isSimulated = _simulationController!.isSimulated;
+          _samplingManager = _simulationController!.samplingManager;
+        }
       }
 
       if (success) {
@@ -337,65 +307,36 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     } catch (e) {
       // If any unexpected exception, try simulation if allowed
       if (allowSimulationIfNoDevice) {
-        _serial = _serialFactory(
-          _selectedPort!,
-          _selectedBaudrate,
-          simulate: true,
+        _simulationController = SimulationController(
+          serialFactory: _serialFactory,
+          port: _selectedPort!,
+          baud: _selectedBaudrate,
+          reductionMethod: reductionMethod,
           dataFormat: dataFormat,
         );
-        _isSimulated = _serial?.simulate ?? true;
-        final simSuccess = _serial!.connect(
-          onPacket: (packet) {
-            setLastPaket(packet);
-            setErrorMessage(null);
-            try {
-              addPacketToPacketController(packet);
-            } catch (_) {}
-            notifyListeners();
-          },
-          onError: (error) {
-            setErrorMessage('Simulation error: $error');
-            notifyListeners();
-          },
+
+        final simSuccess = _simulationController!.connect(
+          setLastPaket: setLastPaket,
+          setErrorMessage: setErrorMessage,
+          addPacketToPacketController: addPacketToPacketController,
+          setCurrentSamples: setCurrentSamples,
+          addSampleToGraph: addSampleToGraph,
+          getGraphStartTime: () => graphStartTime,
+          isRecording: () => isRecording,
+          setGraphStartTime: setGraphStartTime,
+          getRecorder: () => recorder,
+          addToGraphIndex: addToGraphIndex,
+          notifyListeners: notifyListeners,
         );
+
         if (simSuccess) {
+          _serial = _simulationController!.source;
+          _isSimulated = _simulationController!.isSimulated;
+          _samplingManager = _simulationController!.samplingManager;
+
           setConnected(true);
           setErrorMessage(null);
           notifyListeners();
-
-          // Initialize sampling manager (samples every 1 second)
-          _samplingManager = SamplingManager(
-            reductionMethod: reductionMethod,
-            onSampleReady: (samples) async {
-              setCurrentSamples(samples);
-
-              for (var sample in samples) {
-                // Only add the selected sensor to the graph
-                addSampleToGraph(
-                  sample.dataStream,
-                  sample.value,
-                  sample.dataUnit,
-                );
-
-                try {
-                  if (recorder != null && isRecording) {
-                    await recorder!.recordSample(
-                      sample.dataStream,
-                      sample.dataUnit,
-                      sample,
-                    );
-                  }
-                } catch (e) {
-                  // ignore recording errors for now
-                }
-              }
-
-              if (recorder != null && isRecording) {
-                addToGraphIndex(1);
-              }
-              notifyListeners();
-            },
-          );
 
           maybeStartRecorder();
           return null;
@@ -415,6 +356,12 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
   void disconnect() {
     if (_samplingManager != null) {
       _samplingManager!.dispose();
+    }
+
+    // Dispose simulation controller if present
+    if (_simulationController != null) {
+      _simulationController!.dispose();
+      _simulationController = null;
     }
 
     _serial?.disconnect();
