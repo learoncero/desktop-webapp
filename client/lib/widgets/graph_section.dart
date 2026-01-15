@@ -12,6 +12,8 @@ class GraphSection extends StatefulWidget {
   State<GraphSection> createState() => _GraphSectionState();
 }
 
+bool _isRecordHovering = false;
+
 class _GraphSectionState extends State<GraphSection> {
   Future<void> _pickFolder(ConnectionBaseViewModel vm) async {
     try {
@@ -341,45 +343,78 @@ class _GraphSectionState extends State<GraphSection> {
                 // Record button
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20, top: 20),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(40),
-                      onTap: widget.viewModel.isConnected
-                          ? widget.viewModel.toggleRecording
-                          : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 70,
-                        height: 70,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: widget.viewModel.isRecording
-                              ? Colors.red
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: widget.viewModel.isRecording
-                              ? null
-                              : Border.all(color: Colors.red, width: 4),
-                          boxShadow: widget.viewModel.isRecording
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.red.withValues(alpha: 0.6),
-                                    blurRadius: 7,
-                                    spreadRadius: 3,
-                                  ),
-                                ]
-                              : [],
-                        ),
-                        child: Text(
-                          "REC",
-                          style: TextStyle(
+                  child: MouseRegion(
+                    cursor: widget.viewModel.isConnected
+                        ? SystemMouseCursors.click
+                        : SystemMouseCursors.forbidden,
+                    onEnter: (_) {
+                      setState(() => _isRecordHovering = true);
+                    },
+                    onExit: (_) {
+                      setState(() => _isRecordHovering = false);
+                    },
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(40),
+                        onTap: widget.viewModel.isConnected
+                            ? widget.viewModel.toggleRecording
+                            : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 70,
+                          height: 70,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
                             color: widget.viewModel.isRecording
-                                ? Colors.white
-                                : widget.viewModel.isConnected
                                 ? Colors.red
-                                : Colors.grey,
-                            fontWeight: FontWeight.bold,
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                            border: widget.viewModel.isConnected
+                                ? Border.all(color: Colors.red, width: 4)
+                                : Border.all(color: Colors.grey, width: 4),
+                            boxShadow: widget.viewModel.isConnected
+                                ? widget.viewModel.isRecording
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withValues(
+                                              alpha: _isRecordHovering
+                                                  ? 0.7
+                                                  : 0.6,
+                                            ),
+                                            blurRadius: _isRecordHovering
+                                                ? 8
+                                                : 7,
+                                            spreadRadius: _isRecordHovering
+                                                ? 4
+                                                : 3,
+                                          ),
+                                        ]
+                                      : _isRecordHovering
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : []
+                                : [],
+                          ),
+                          child: Text(
+                            "REC",
+                            style: TextStyle(
+                              color: widget.viewModel.isRecording
+                                  ? Colors.white
+                                  : widget.viewModel.isConnected
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -451,7 +486,7 @@ class _GraphSectionState extends State<GraphSection> {
                           waitDuration: const Duration(milliseconds: 300),
                           child: Text(
                             selectedFolderPath.length <= 40
-                                ? 'Selected Folder $selectedFolderPath'
+                                ? 'Selected Folder: $selectedFolderPath'
                                 : 'Selected Folder: ${selectedFolderPath.substring(0, 40)}...',
                             maxLines: 1,
                             overflow: TextOverflow.clip,
