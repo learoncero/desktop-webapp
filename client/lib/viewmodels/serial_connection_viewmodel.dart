@@ -34,6 +34,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
   String? _selectedPort = "COM1";
   int _selectedBaudrate = 115200;
   SerialSource? _serial;
+  bool _isConnecting = false;
 
   // Sampling state
   SamplingManager? _samplingManager;
@@ -60,6 +61,7 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
   bool get isSimulated => _isSimulated;
   List<String> get availablePorts => _availablePorts;
   bool get isScanning => _isScanning;
+  bool get isConnecting => _isConnecting;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -121,13 +123,24 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     bool allowSimulationIfNoDevice = false,
     bool forceSimulate = false,
   }) async {
+    if (_isConnecting) {
+      return 'Already connecting';
+    }
+
+    _isConnecting = true;
+    notifyListeners();
+
     if (_selectedPort == null) {
       setErrorMessage('Please select a port first');
+      notifyListeners();
+      _isConnecting = false;
       notifyListeners();
       return errorMessage;
     }
 
     if (isConnected) {
+      _isConnecting = false;
+      notifyListeners();
       return null; // Already connected
     }
 
@@ -165,10 +178,14 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
           notifyListeners();
 
           maybeStartRecorder();
+          _isConnecting = false;
+          notifyListeners();
           return null;
         } else {
           _serial = null;
           setErrorMessage('Failed to start simulation');
+          notifyListeners();
+          _isConnecting = false;
           notifyListeners();
           return errorMessage;
         }
@@ -338,11 +355,15 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
         // Maybe start recorder if folder set
         maybeStartRecorder();
+        _isConnecting = false;
+        notifyListeners();
 
         return null; // Success
       } else {
         _serial = null;
         setErrorMessage('Failed to open serial port: $_selectedPort');
+        notifyListeners();
+        _isConnecting = false;
         notifyListeners();
         return errorMessage;
       }
@@ -381,6 +402,8 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
           notifyListeners();
 
           maybeStartRecorder();
+          _isConnecting = false;
+          notifyListeners();
           return null;
         }
       }
@@ -388,6 +411,8 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       _serial = null;
       _isSimulated = false;
       setErrorMessage('Connection error: $e');
+      notifyListeners();
+      _isConnecting = false;
       notifyListeners();
       return errorMessage;
     }
