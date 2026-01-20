@@ -80,15 +80,15 @@ class SerialSource {
       // Configure port after opening (important for VMs and some hardware)
       final config = port!.config;
       config.baudRate = baudRate;
-      // config.bits = 8;
-      // config.parity = SerialPortParity.none;
-      // config.stopBits = 1;
+      config.bits = 8;
+      config.parity = SerialPortParity.none;
+      config.stopBits = 1;
 
       // Disable all flow control for better VM compatibility
-      // config.rts = SerialPortRts.off;
-      // config.cts = SerialPortCts.ignore;
-      // config.dsr = SerialPortDsr.ignore;
-      // config.dtr = SerialPortDtr.off;
+      config.rts = SerialPortRts.off;
+      config.cts = SerialPortCts.ignore;
+      config.dsr = SerialPortDsr.ignore;
+      config.dtr = SerialPortDtr.off;
 
       port!.config = config;
 
