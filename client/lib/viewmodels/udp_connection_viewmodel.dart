@@ -55,7 +55,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
-            clearError();
           } else {
             // Check if sensors have changed using listEquals
             final sensorsChanged = !listEquals(availableSensors, sensorNames);
@@ -72,7 +71,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
-                clearError();
               } else {
                 // Show warning once if recording and sensors changed
                 if (errorMessage !=
@@ -83,9 +81,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                   notifyListeners();
                 }
               }
-            } else {
-              // Sensors match, clear any previous error
-              clearError();
             }
           }
 

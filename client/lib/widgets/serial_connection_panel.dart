@@ -60,6 +60,7 @@ class _SerialConnectionPanelState extends State<SerialConnectionPanel> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error), backgroundColor: Colors.red),
       );
+      viewModel.clearError();
     }
   }
 

@@ -203,7 +203,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       var success = _serial!.connect(
         onPacket: (packet) {
           setLastPaket(packet);
-          setErrorMessage(null);
 
           // Add to packet stream for any listeners (e.g., recorder)
           try {
@@ -218,7 +217,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
-            clearError();
           } else {
             // Check if sensors have changed using listEquals
             final sensorsChanged = !listEquals(availableSensors, sensorNames);
@@ -235,7 +233,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
-                clearError();
               } else {
                 // Show warning once if recording and sensors changed
                 if (errorMessage !=
@@ -246,9 +243,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                   notifyListeners();
                 }
               }
-            } else {
-              // Sensors match, clear any previous error
-              clearError();
             }
           }
 

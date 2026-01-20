@@ -16,6 +16,7 @@ class UdpConnectionPanel extends StatelessWidget {
         SnackBar(content: Text(error), backgroundColor: Colors.red),
       );
     }
+    viewModel.clearError();
   }
 
   void handleDisconnect(BuildContext context) {

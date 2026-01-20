@@ -154,6 +154,7 @@ abstract class ConnectionBaseViewModel extends ChangeNotifier {
   // Set the data format (JSON or CSV) - shared across all instances
   void setDataFormat(DataFormat format) {
     _sharedDataFormat = format;
+    clearError();
     notifyListeners();
   }
 

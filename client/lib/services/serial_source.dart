@@ -21,7 +21,7 @@ class SerialSource {
   Timer? _simTimer;
   int _simCounter = 0;
   String _buffer = ''; // Buffer for incomplete lines
-  int _packetCount = 0; // Count packets to skip initial ones
+  int _consecutiveErrors = 0;
 
   SerialSource(
     this.portName,
@@ -74,7 +74,6 @@ class SerialSource {
 
       // Open port first before configuring
       if (!port!.openReadWrite()) {
-        final lastErrorCode = SerialPort.lastError;
         return false;
       }
 
@@ -95,9 +94,6 @@ class SerialSource {
 
       // Flush the input buffer to clear any old data
       port!.flush(SerialPortBuffer.input);
-
-      // Reset packet counter for this connection
-      _packetCount = 0;
 
       reader = SerialPortReader(port!);
       reader!.stream.listen(
@@ -121,38 +117,26 @@ class SerialSource {
                   : CsvParser.parse(line);
 
               if (packet != null) {
-                // Skip the first packet to avoid partial data from buffer
-                if (_packetCount < 1) {
-                  _packetCount++;
-                  if (kDebugMode) {
-                    print('Skipping initial packet to avoid buffer issues');
-                  }
-                  continue;
-                }
-
                 onPacket(packet);
               } else {
-                // Only report error if we've passed the initial packets
-                if (_packetCount >= 1) {
+                _consecutiveErrors += 1;
+
+                if (_consecutiveErrors >= 500) {
                   onError?.call(
                     'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
                     'Please check your data format settings.',
                   );
+                  _consecutiveErrors = 0; // Reset after reporting
                 }
               }
             } catch (e) {
-              // Skip parsing errors on initial packets
-              if (_packetCount >= 1) {
-                if (kDebugMode) {
-                  print('Parse error: $e');
-                }
-                onError?.call(
-                  'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
-                  'Error: $e',
-                );
-              } else {
-                _packetCount++;
+              if (kDebugMode) {
+                print('Failed to parse serial line as $dataFormat: $line');
               }
+              onError?.call(
+                'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
+                'Please check your data format settings.',
+              );
             }
           }
         },
