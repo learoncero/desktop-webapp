@@ -10,18 +10,16 @@ Repository: https://github.com/learoncero/desktop-webapp
 
 ## Features
 
-- Live plotting of incoming sensor streams (Serial / UDP).
 - Connection management (Serial, UDP) and configuration.
+- Live plotting of incoming sensor streams (over Serial / UDP at one time).
 - CSV recording of selected sensor values per recording session.
-- Load previously recorded CSV files for offline inspection.
+- Load previously recorded CSV files for inspection.
 - Desktop-targeted UI (Windows, macOS, Linux).
 
 ## Requirements
 
-- Flutter SDK (stable channel). See https://flutter.dev for installation.
+- Flutter SDK. See https://flutter.dev for installation.
 - Desktop toolchains for the target platform (Windows SDK / Xcode / GTK toolchain).
-
-Recommended: Flutter 3.0+ with desktop support enabled.
 
 ## Build & Run (development)
 
@@ -44,52 +42,44 @@ For macOS / Linux use `-d macos` / `-d linux` respectively.
 ## Usage
 
 1. Open the app and select the desired connection type from the menu (Serial or UDP).
-2. Configure connection parameters (e.g. COM port / IP address / baud rate / sample format).
-3. Click `Connect` to start receiving data. Live plots will update in real time.
-4. To record data: enable CSV recording in the recording controls. Each recording session creates a new CSV file.
+2. Configure connection parameters (e.g. COM port / IP address / baud rate / sample format in settings).
+3. Click `Connect` to start receiving data. Live plots will update in real time. and show on the graph
+4. Each recording session creates a new CSV file with the available data streams.
 5. Use `File -> Load CSV` to open previously recorded CSV files.
 
 ## Dashboard & Graphs
 
-This application provides an interactive dashboard for live visualization and basic analysis of incoming sensor streams. The dashboard is intended for monitoring real-time data, inspecting trends, and creating short recordings for offline analysis.
+This application provides an interactive dashboard for live visualization of incoming sensor streams. The dashboard is intended for monitoring real-time data, inspecting trends, and creating recordings for later analysis.
 
 Graph elements
 
-- Time axis: a horizontal time axis shows absolute timestamps for samples. The default view displays a rolling time window (configurable in the UI) so the most recent samples are visible.
-- Channels (series): each detected sensor channel is displayed as a separate colored series. Channel names come from the incoming packet metadata.
-- Legend: the legend lists enabled channels with small color markers and current value readouts when a sample arrives.
-- Axis scaling: the graph supports autoscaling (per-channel) and fixed-range modes. Use fixed ranges for comparing channels with known bounds, and autoscale for exploratory views.
+- Time axis: a horizontal time axis shows absolute timestamps for samples. The default view displays a rolling time window of 60s (configurable in the UI), so the most recent samples are visible. The number of displayed seconds can be changed in the settings.
+- Datastreams: Datastreams come from the incoming source. Only one datastream can be displayed at once, but the history since starting the recording is saved, when changing the stream.
 
 Interactions
 
-- Pause/Resume: pause the live plot to freeze the current view for inspection; incoming data is still received and buffered while paused.
-- Zoom: click-and-drag or use mouse-wheel to zoom the time axis or value axis (depending on focus). A "reset zoom" control restores the default rolling window.
-- Pan: when zoomed in, click-and-drag horizontally to pan older/newer time ranges.
-- Enable / Disable channels: toggle channels on/off from the legend or channel panel to reduce visual clutter and CPU usage.
-- Hover / Tooltip: hover over the graph to see exact timestamp and per-channel values at that x-position. Tooltips show parsed value and unit if available.
-- Snap to sample: tooltips and crosshairs snap to the nearest sample present in the buffer to avoid interpolated values unless explicitly enabled.
+- Connect and Disconnect: Connecting to a datsource by setting the correct information and clicking on connect.
+- Over UDP the available COM-Ports need to be refreshed
+- Start and Stop Recording: Click on the Record Button to start and stop recording. A file will be created with the current time in the selected folder, that saves the data as a csv.
 
 Data semantics & export
 
-- Timestamp format: timestamps are recorded as ISO-8601-like UTC timestamps in the CSV (see `lib/services/csv_recorder.dart` for details). All graph time labels are shown in local time by default unless changed in settings.
-- Sample rate & ordering: samples are plotted and saved in the order they arrive. The app guards against duplicate timestamps being written to CSV. If packets arrive out of order, the plot will show them in arrival order; CSV recording preserves the single-sample-per-row model.
-- Missing channels: if a channel present at recording start disappears later, its CSV column remains in the file and subsequent rows for that column are left empty. The live plot hides disconnected channels by default but keeps them in the channel list.
-- Recording & export: starting a recording captures the current set of channels and writes rows for each sample. Use `File -> Load CSV` to re-open exported recordings for offline graphing. CSV file naming includes a timestamp and session id.
+- Timestamp format: timestamps are recorded in the CSV (see `lib/services/csv_recorder.dart` for details). All graph time labels are shown in local time by default.
+- Sample rate & ordering: samples are plotted and saved in the order they arrive. CSV recording saves a single sample per row.
+- Datassteram: if a datastream is present at recording start disappears later, its CSV column remains in the file and subsequent rows for that column are left empty. The live plot hides disconnected datastreams but keeps them in the datastreams list.
+- Recording & export: starting a recording captures the current set of datastreams and writes rows for each sample.
 
 ## CSV recording behavior
 
-- When a CSV recording starts, the currently available sensor channels are detected and written to the CSV header.
+- When a CSV recording starts, the currently available sensor datastreams are detected and written to the CSV header.
   Example header: `timestamp,temperature_unit,temperature_value`
-
-- Each CSV row represents a single sample with a timestamp and values for the channels present at recording start.
-
-- If a channel that was present at the start disconnects during recording, its CSV fields are left empty for subsequent rows; recording continues.
-
-- Important: The implementation ensures that no duplicate timestamps are written and that no purely empty rows are added to the end of the CSV. Each row represents exactly one sample with a timestamp.
+- Each CSV row represents a single sample with a timestamp and values for the datastream present at recording start.
+- If a datastream that was present at the start disconnects during recording, its CSV fields are left empty for subsequent rows; recording continues.
+- Each row represents exactly one sample with a timestamp.
 
 ## Tests
 
-This project contains unit tests in the `test/` directory.
+This project contains unit tests for the simulated serial port behaviour in the `test/` directory.
 
 - Run tests locally:
 
@@ -103,14 +93,25 @@ This project contains unit tests in the `test/` directory.
   flutter analyze
   ```
 
-## Troubleshooting
-
-- No data after Connect: verify cables and device power, correct port/baud rate, and that no other program holds the port.
-- Serial devices not detected on Windows: check drivers, reconnect the device, or reboot the machine.
-- Performance issues at very high sample rates: reduce the sample rate, limit the number of plotted channels, or filter channels.
-
-## Contributing
-
-Issues and pull requests are welcome — please open an issue first with a short description and reproduction steps.
-
-- GitHub: https://github.com/learoncero/desktop-webapp
+## Possible Improvements
+ 
+- **Serial connection and port selection**\
+  The current library used for establishing the serial connection and selecting ports is unreliable and occasionally causes the application to freeze completely. Alternative libraries should be evaluated and tested for better stability.
+ 
+- **Statistics scope (time range selection)**\
+  Currently, all statistics are calculated over the entire recorded time span. An option to switch between statistics for the full dataset and statistics limited to the currently visible time window could be added.
+ 
+- **User-defined CSV headers for incoming data**\
+  The application currently does not allow customization of CSV headers. A mechanism that lets users define column headers that correspond to the structure and semantics of the data they transmit to the application could be introduced.
+ 
+- **Graph layout and UI overlap**\
+  The graph plot is partially hidden behind the data stream dropdown menu. The UI layout should be adjusted to prevent overlapping elements and ensure the graph remains fully visible.
+ 
+- **Data format support for incoming data**\
+  Support for incoming data formats could be expanded. Currently, the application only accepts JSON and a predefined CSV format.
+ 
+- **Multiple sensor support**\
+  The serial connection has only been tested with a single sensor that continuously transmits data. Sensors that require prior configuration or explicit start/stop commands are currently not supported by the application.
+ 
+- **Out-of-order data handling and timestamps**\
+  Incoming data is timestamped by the application upon reception and no checks are performed for out-of-order arrival. As a result, delayed or reordered data packets are not detected or handled. Future improvements could include validating data order or supporting sensor-provided timestamps.

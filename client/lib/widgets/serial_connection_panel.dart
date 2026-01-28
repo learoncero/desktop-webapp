@@ -1,13 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_dash/viewmodels/serial_connection_viewmodel.dart';
 
-class SerialConnectionPanel extends StatelessWidget {
+class SerialConnectionPanel extends StatefulWidget {
   final SerialConnectionViewModel viewModel;
 
   const SerialConnectionPanel({super.key, required this.viewModel});
 
+  @override
+  State<SerialConnectionPanel> createState() => _SerialConnectionPanelState();
+}
+
+class _SerialConnectionPanelState extends State<SerialConnectionPanel> {
+  SerialConnectionViewModel get viewModel => widget.viewModel;
+
   Future<void> _handleConnect(BuildContext context) async {
+    var cancelled = false;
+    var dialogShown = false;
+
+    // Schedule dialog after 250ms if still connecting
+    Future.delayed(const Duration(milliseconds: 250)).then((_) {
+      if (cancelled) return;
+      if (!context.mounted) return;
+      if (viewModel.isConnecting) {
+        dialogShown = true;
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Connecting...'),
+              content: Row(
+                children: const [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(child: Text('Please wait while connecting.')),
+                ],
+              ),
+            );
+          },
+        );
+      }
+    });
+
     final error = await viewModel.connect();
+
+    cancelled = true; // Cancel pending dialog-show and close if open
+
+    if (dialogShown && context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
 
     if (!context.mounted) return;
 
@@ -15,11 +60,16 @@ class SerialConnectionPanel extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error), backgroundColor: Colors.red),
       );
+      viewModel.clearError();
     }
   }
 
   void _handleDisconnect(BuildContext context) {
     viewModel.disconnect();
+  }
+
+  Future<void> _handleRefreshPorts(BuildContext context) async {
+    await viewModel.refreshPorts();
   }
 
   @override
@@ -47,6 +97,8 @@ class SerialConnectionPanel extends StatelessWidget {
             });
           }
 
+          final disabling = viewModel.isConnected || viewModel.isConnecting;
+
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: Theme.of(context).colorScheme.surfaceContainerHigh,
@@ -65,8 +117,8 @@ class SerialConnectionPanel extends StatelessWidget {
                         ),
                       )
                       .toList(),
-                  onChanged: viewModel.isConnected
-                      ? null // Lock when connected
+                  onChanged: disabling
+                      ? null // Lock when connected or connecting
                       : (value) => viewModel.selectBaudrate(value!),
                 ),
                 const SizedBox(width: 24),
@@ -74,22 +126,44 @@ class SerialConnectionPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 DropdownButton<String>(
                   value: viewModel.selectedPort,
-                  items: SerialConnectionViewModel.availablePorts
+                  items: viewModel.availablePorts
                       .map(
                         (port) =>
                             DropdownMenuItem(value: port, child: Text(port)),
                       )
                       .toList(),
-                  onChanged: viewModel.isConnected
-                      ? null // Lock when connected
+                  onChanged: disabling
+                      ? null // Lock when connected or connecting
                       : (value) => viewModel.selectPort(value),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: viewModel.isScanning
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  onPressed: viewModel.isConnected || viewModel.isScanning || viewModel.isConnecting
+                      ? null // Disable when connected, scanning, or connecting
+                      : () => _handleRefreshPorts(context),
+                  tooltip: 'Refresh Ports',
+                ),
+                const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: viewModel.isConnected
-                      ? () => _handleDisconnect(context)
-                      : () => _handleConnect(context),
-                  child: Text(viewModel.isConnected ? "Disconnect" : "Connect"),
+                  onPressed: viewModel.isConnecting
+                      ? null
+                      : viewModel.isConnected
+                          ? () => _handleDisconnect(context)
+                          : () => _handleConnect(context),
+                  child: viewModel.isConnecting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(viewModel.isConnected ? "Disconnect" : "Connect"),
                 ),
               ],
             ),

@@ -55,7 +55,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
-            clearError();
           } else {
             // Check if sensors have changed using listEquals
             final sensorsChanged = !listEquals(availableSensors, sensorNames);
@@ -72,7 +71,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
-                clearError();
               } else {
                 // Show warning once if recording and sensors changed
                 if (errorMessage !=
@@ -83,9 +81,6 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
                   notifyListeners();
                 }
               }
-            } else {
-              // Sensors match, clear any previous error
-              clearError();
             }
           }
 
@@ -165,7 +160,9 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
         return null; // Success
       } else {
         _udp = null;
-        setErrorMessage('Failed to open UDP connection');
+        setErrorMessage(
+          'Failed to open UDP connection. Please check address and port',
+        );
         notifyListeners();
         return errorMessage;
       }
@@ -188,6 +185,15 @@ class UdpConnectionViewModel extends ConnectionBaseViewModel {
       _port = parsedPort;
     }
     notifyListeners();
+  }
+
+  bool canConnect() {
+    if (addressController.text.trim().isNotEmpty &&
+        portController.text.trim().isNotEmpty &&
+        int.tryParse(portController.text) != null) {
+      return true;
+    }
+    return false;
   }
 
   @override

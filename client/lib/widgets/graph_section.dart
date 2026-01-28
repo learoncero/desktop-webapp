@@ -12,6 +12,8 @@ class GraphSection extends StatefulWidget {
   State<GraphSection> createState() => _GraphSectionState();
 }
 
+bool _isRecordHovering = false;
+
 class _GraphSectionState extends State<GraphSection> {
   Future<void> _pickFolder(ConnectionBaseViewModel vm) async {
     try {
@@ -341,45 +343,78 @@ class _GraphSectionState extends State<GraphSection> {
                 // Record button
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20, top: 20),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(40),
-                      onTap: widget.viewModel.isConnected
-                          ? widget.viewModel.toggleRecording
-                          : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 70,
-                        height: 70,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: widget.viewModel.isRecording
-                              ? Colors.red
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: widget.viewModel.isRecording
-                              ? null
-                              : Border.all(color: Colors.red, width: 4),
-                          boxShadow: widget.viewModel.isRecording
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.red.withValues(alpha: 0.6),
-                                    blurRadius: 7,
-                                    spreadRadius: 3,
-                                  ),
-                                ]
-                              : [],
-                        ),
-                        child: Text(
-                          "REC",
-                          style: TextStyle(
+                  child: MouseRegion(
+                    cursor: widget.viewModel.isConnected
+                        ? SystemMouseCursors.click
+                        : SystemMouseCursors.forbidden,
+                    onEnter: (_) {
+                      setState(() => _isRecordHovering = true);
+                    },
+                    onExit: (_) {
+                      setState(() => _isRecordHovering = false);
+                    },
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(40),
+                        onTap: widget.viewModel.isConnected
+                            ? widget.viewModel.toggleRecording
+                            : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 70,
+                          height: 70,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
                             color: widget.viewModel.isRecording
-                                ? Colors.white
-                                : widget.viewModel.isConnected
                                 ? Colors.red
-                                : Colors.grey,
-                            fontWeight: FontWeight.bold,
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                            border: widget.viewModel.isConnected
+                                ? Border.all(color: Colors.red, width: 4)
+                                : Border.all(color: Colors.grey, width: 4),
+                            boxShadow: widget.viewModel.isConnected
+                                ? widget.viewModel.isRecording
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withValues(
+                                              alpha: _isRecordHovering
+                                                  ? 0.7
+                                                  : 0.6,
+                                            ),
+                                            blurRadius: _isRecordHovering
+                                                ? 8
+                                                : 7,
+                                            spreadRadius: _isRecordHovering
+                                                ? 4
+                                                : 3,
+                                          ),
+                                        ]
+                                      : _isRecordHovering
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : []
+                                : [],
+                          ),
+                          child: Text(
+                            "REC",
+                            style: TextStyle(
+                              color: widget.viewModel.isRecording
+                                  ? Colors.white
+                                  : widget.viewModel.isConnected
+                                  ? Colors.red
+                                  : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -389,72 +424,87 @@ class _GraphSectionState extends State<GraphSection> {
 
                 const SizedBox(width: 40),
 
-                // Select folder button + help
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                Column(
+                  spacing: 8,
                   children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
+                    // Select folder button + help
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          onPressed: () => _pickFolder(widget.viewModel),
+                          child: const Text("Select Save Folder"),
                         ),
-                      ),
-                      onPressed: () => _pickFolder(widget.viewModel),
-                      child: const Text("Select Save Folder"),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'Help: Select Save Folder',
-                      icon: const Icon(Icons.help_outline),
-                      onPressed: () {
-                        showDialog<void>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Save Folder — Help'),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Use "Select Save Folder" to manually choose the directory where CSV recordings will be written when recording is active.',
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Help: Select Save Folder',
+                          icon: const Icon(Icons.help_outline),
+                          onPressed: () {
+                            showDialog<void>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Save Folder — Help'),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Use "Select Save Folder" to manually choose the directory where CSV recordings will be written when recording is active.',
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        'A default folder is already configured by the application as seen at the bottom of the screen; selecting a folder here overrides the default for subsequent recordings.',
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'A default folder is already configured by the application as seen at the bottom of the screen; selecting a folder here overrides the default for subsequent recordings.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                    child: const Text('Close'),
                                   ),
                                 ],
                               ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('Close'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                            );
+                          },
+                        ),
+                      ],
                     ),
+                    // Display selected folder path
+                    if (selectedFolderPath != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Tooltip(
+                          message: selectedFolderPath,
+                          waitDuration: const Duration(milliseconds: 300),
+                          child: Text(
+                            selectedFolderPath.length <= 40
+                                ? 'Selected Folder: $selectedFolderPath'
+                                : 'Selected Folder: ${selectedFolderPath.substring(0, 40)}...',
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],
             );
           },
         ),
-
-        // Display selected folder path
-        if (selectedFolderPath != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(
-              'Selected Folder: $selectedFolderPath',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 14,
-              ),
-            ),
-          ),
       ],
     );
   }

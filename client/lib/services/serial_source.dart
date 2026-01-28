@@ -21,6 +21,7 @@ class SerialSource {
   Timer? _simTimer;
   int _simCounter = 0;
   String _buffer = ''; // Buffer for incomplete lines
+  int _consecutiveErrors = 0;
 
   SerialSource(
     this.portName,
@@ -70,11 +71,29 @@ class SerialSource {
 
     try {
       port = SerialPort(portName);
-      port!.config.baudRate = baudRate;
 
+      // Open port first before configuring
       if (!port!.openReadWrite()) {
         return false;
       }
+
+      // Configure port after opening (important for VMs and some hardware)
+      final config = port!.config;
+      config.baudRate = baudRate;
+      config.bits = 8;
+      config.parity = SerialPortParity.none;
+      config.stopBits = 1;
+
+      // Disable all flow control for better VM compatibility
+      config.rts = SerialPortRts.off;
+      config.cts = SerialPortCts.ignore;
+      config.dsr = SerialPortDsr.ignore;
+      config.dtr = SerialPortDtr.off;
+
+      port!.config = config;
+
+      // Flush the input buffer to clear any old data
+      port!.flush(SerialPortBuffer.input);
 
       reader = SerialPortReader(port!);
       reader!.stream.listen(
@@ -92,14 +111,28 @@ class SerialSource {
               continue;
             }
 
-            final packet = dataFormat == DataFormat.json
-                ? JsonParser.parse(line)
-                : CsvParser.parse(line);
+            try {
+              final packet = dataFormat == DataFormat.json
+                  ? JsonParser.parse(line)
+                  : CsvParser.parse(line);
 
-            if (packet != null) {
-              onPacket(packet);
-            } else {
-              // Parsing failed - wrong data format
+              if (packet != null) {
+                onPacket(packet);
+              } else {
+                _consecutiveErrors += 1;
+
+                if (_consecutiveErrors >= 500) {
+                  onError?.call(
+                    'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
+                    'Please check your data format settings.',
+                  );
+                  _consecutiveErrors = 0; // Reset after reporting
+                }
+              }
+            } catch (e) {
+              if (kDebugMode) {
+                print('Failed to parse serial line as $dataFormat: $line');
+              }
               onError?.call(
                 'Failed to parse received data as ${dataFormat.name.toUpperCase()}. '
                 'Please check your data format settings.',
@@ -120,8 +153,16 @@ class SerialSource {
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Serial connection exception: $e');
+      // Clean up on error
+      try {
+        reader?.close();
+        port?.close();
+      } catch (_) {}
+      reader = null;
+      port = null;
+
+      if (onError != null) {
+        onError('Failed to connect to $portName: $e');
       }
       return false;
     }

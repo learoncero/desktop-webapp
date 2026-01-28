@@ -1,3 +1,4 @@
+import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_dash/services/serial_source.dart';
 import 'package:sensor_dash/services/sampling_manager.dart';
 import 'dart:developer';
@@ -5,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'package:sensor_dash/viewmodels/connection_base_viewmodel.dart';
+import 'package:sensor_dash/services/simulation_controller.dart';
 
 class SerialConnectionViewModel extends ConnectionBaseViewModel {
   final SerialSource Function(
@@ -24,17 +26,25 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                SerialSource(p, b, simulate: simulate, dataFormat: dataFormat)) {
     // Initialize a cross-platform default save folder (user can still change it)
     initDefaultSaveFolder();
+
+    _scanPorts();
   }
 
   // Connection state
   String? _selectedPort = "COM1";
   int _selectedBaudrate = 115200;
   SerialSource? _serial;
+  bool _isConnecting = false;
 
   // Sampling state
   SamplingManager? _samplingManager;
 
+  // Simulation controller (phase B) holds simulation lifecycle and routing
+  SimulationController? _simulationController;
+
   bool _isSimulated = false;
+  List<String> _availablePorts = [];
+  bool _isScanning = false;
 
   static const List<int> availableBaudrates = [
     9600,
@@ -45,18 +55,13 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     230400,
   ];
 
-  static const List<String> availablePorts = [
-    "COM1",
-    "COM2",
-    "COM3",
-    "COM4",
-    "COM5",
-  ];
-
   // Getters
   String? get selectedPort => _selectedPort;
   int get selectedBaudrate => _selectedBaudrate;
   bool get isSimulated => _isSimulated;
+  List<String> get availablePorts => _availablePorts;
+  bool get isScanning => _isScanning;
+  bool get isConnecting => _isConnecting;
 
   // Setters with notification
   void selectPort(String? port) {
@@ -71,97 +76,116 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
     notifyListeners();
   }
 
+  Future<void> refreshPorts() async {
+    await _scanPorts();
+  }
+
+  // Scan for available serial ports
+  Future<void> _scanPorts() async {
+    if (_isScanning) return;
+
+    _isScanning = true;
+    notifyListeners();
+
+    try {
+      // Run the blocking call in a separate isolate to prevent UI freezing
+      final ports = await compute(_getAvailablePorts, null);
+
+      if (!listEquals(_availablePorts, ports)) {
+        _availablePorts = ports..sort();
+
+        if (_selectedPort == null && _availablePorts.isNotEmpty) {
+          _selectedPort = _availablePorts.first;
+        }
+
+        // If selected port is no longer available, reset selection
+        if (_selectedPort != null && !_availablePorts.contains(_selectedPort)) {
+          _selectedPort = _availablePorts.isNotEmpty
+              ? _availablePorts.first
+              : null;
+        }
+
+        notifyListeners();
+      }
+    } catch (e) {
+      log('Error scanning ports: $e');
+    } finally {
+      _isScanning = false;
+      notifyListeners();
+    }
+  }
+
+  static List<String> _getAvailablePorts(void _) {
+    return SerialPort.availablePorts;
+  }
+
   Future<String?> connect({
     bool allowSimulationIfNoDevice = false,
     bool forceSimulate = false,
   }) async {
+    if (_isConnecting) {
+      return 'Already connecting';
+    }
+
+    _isConnecting = true;
+    notifyListeners();
+
     if (_selectedPort == null) {
       setErrorMessage('Please select a port first');
+      notifyListeners();
+      _isConnecting = false;
       notifyListeners();
       return errorMessage;
     }
 
     if (isConnected) {
+      _isConnecting = false;
+      notifyListeners();
       return null; // Already connected
     }
 
     try {
       if (forceSimulate) {
-        _serial = _serialFactory(
-          _selectedPort!,
-          _selectedBaudrate,
-          simulate: true,
+        _simulationController = SimulationController(
+          serialFactory: _serialFactory,
+          port: _selectedPort!,
+          baud: _selectedBaudrate,
+          reductionMethod: reductionMethod,
           dataFormat: dataFormat,
         );
-        _isSimulated = true;
-        final simSuccess = _serial!.connect(
-          onPacket: (packet) {
-            setLastPaket(packet);
-            setErrorMessage(null);
-            try {
-              addPacketToPacketController(packet);
-            } catch (_) {}
-            notifyListeners();
-          },
-          onError: (error) {
-            log('Serial error: $error');
-            setErrorMessage(error);
-            disconnect();
-            notifyListeners();
-          },
+
+        final simSuccess = _simulationController!.connect(
+          setLastPaket: setLastPaket,
+          setErrorMessage: setErrorMessage,
+          addPacketToPacketController: addPacketToPacketController,
+          setCurrentSamples: setCurrentSamples,
+          addSampleToGraph: addSampleToGraph,
+          getGraphStartTime: () => graphStartTime,
+          isRecording: () => isRecording,
+          setGraphStartTime: setGraphStartTime,
+          getRecorder: () => recorder,
+          addToGraphIndex: addToGraphIndex,
+          notifyListeners: notifyListeners,
         );
 
         if (simSuccess) {
+          _serial = _simulationController!.source;
+          _isSimulated = _simulationController!.isSimulated;
+          _samplingManager = _simulationController!.samplingManager;
+
           setConnected(true);
           setErrorMessage(null);
           notifyListeners();
 
-          // Initialize sampling manager (samples every 1 second)
-          _samplingManager = SamplingManager(
-            onSampleReady: (samples) async {
-              setCurrentSamples(samples);
-
-              for (var sample in samples) {
-                // Add sample to graph if recording
-                addSampleToGraph(
-                  sample.dataStream,
-                  sample.value,
-                  sample.dataUnit,
-                );
-
-                if (graphStartTime.isEmpty && isRecording) {
-                  setGraphStartTime(
-                    "${sample.timestamp.toLocal().day.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().month.toString().padLeft(2, '0')}.${sample.timestamp.toLocal().year} "
-                    "${sample.timestamp.toLocal().hour.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().minute.toString().padLeft(2, '0')}:${sample.timestamp.toLocal().second.toString().padLeft(2, '0')}",
-                  );
-                }
-
-                // Forward sample to recorder if recording
-                try {
-                  if (recorder != null && isRecording) {
-                    await recorder!.recordSample(
-                      sample.dataStream,
-                      sample.dataUnit,
-                      sample,
-                    );
-                  }
-                } catch (e) {
-                  // ignore recording errors for now
-                }
-              }
-
-              if (recorder != null && isRecording) {
-                addToGraphIndex(1);
-              }
-              notifyListeners();
-            },
-          );
-
           maybeStartRecorder();
+          _isConnecting = false;
+          notifyListeners();
           return null;
         } else {
           _serial = null;
           setErrorMessage('Failed to start simulation');
+          notifyListeners();
+          _isConnecting = false;
           notifyListeners();
           return errorMessage;
         }
@@ -179,7 +203,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       var success = _serial!.connect(
         onPacket: (packet) {
           setLastPaket(packet);
-          setErrorMessage(null);
 
           // Add to packet stream for any listeners (e.g., recorder)
           try {
@@ -194,7 +217,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
             if (selectedSensorForPlot == null && sensorNames.isNotEmpty) {
               setSelectedSensorForPlot(sensorNames.first);
             }
-            clearError();
           } else {
             // Check if sensors have changed using listEquals
             final sensorsChanged = !listEquals(availableSensors, sensorNames);
@@ -211,7 +233,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                     sensorNames.isNotEmpty ? sensorNames.first : null,
                   );
                 }
-                clearError();
               } else {
                 // Show warning once if recording and sensors changed
                 if (errorMessage !=
@@ -222,9 +243,6 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
                   notifyListeners();
                 }
               }
-            } else {
-              // Sensors match, clear any previous error
-              clearError();
             }
           }
 
@@ -248,28 +266,33 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       );
 
       if (!success && allowSimulationIfNoDevice) {
-        // Try simulation fallback
-        _serial = SerialSource(
-          _selectedPort!,
-          _selectedBaudrate,
-          simulate: true,
+        _simulationController = SimulationController(
+          serialFactory: _serialFactory,
+          port: _selectedPort!,
+          baud: _selectedBaudrate,
+          reductionMethod: reductionMethod,
           dataFormat: dataFormat,
         );
-        _isSimulated = _serial?.simulate ?? true;
-        success = _serial!.connect(
-          onPacket: (packet) {
-            setLastPaket(packet);
-            setErrorMessage(null);
-            try {
-              addPacketToPacketController(packet);
-            } catch (_) {}
-            notifyListeners();
-          },
-          onError: (error) {
-            setErrorMessage('Simulation error: $error');
-            notifyListeners();
-          },
+
+        final simSuccess = _simulationController!.connect(
+          setLastPaket: setLastPaket,
+          setErrorMessage: setErrorMessage,
+          addPacketToPacketController: addPacketToPacketController,
+          setCurrentSamples: setCurrentSamples,
+          addSampleToGraph: addSampleToGraph,
+          getGraphStartTime: () => graphStartTime,
+          isRecording: () => isRecording,
+          setGraphStartTime: setGraphStartTime,
+          getRecorder: () => recorder,
+          addToGraphIndex: addToGraphIndex,
+          notifyListeners: notifyListeners,
         );
+
+        if (simSuccess) {
+          _serial = _simulationController!.source;
+          _isSimulated = _simulationController!.isSimulated;
+          _samplingManager = _simulationController!.samplingManager;
+        }
       }
 
       if (success) {
@@ -326,78 +349,55 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
 
         // Maybe start recorder if folder set
         maybeStartRecorder();
+        _isConnecting = false;
+        notifyListeners();
 
         return null; // Success
       } else {
         _serial = null;
         setErrorMessage('Failed to open serial port: $_selectedPort');
         notifyListeners();
+        _isConnecting = false;
+        notifyListeners();
         return errorMessage;
       }
     } catch (e) {
       // If any unexpected exception, try simulation if allowed
       if (allowSimulationIfNoDevice) {
-        _serial = _serialFactory(
-          _selectedPort!,
-          _selectedBaudrate,
-          simulate: true,
+        _simulationController = SimulationController(
+          serialFactory: _serialFactory,
+          port: _selectedPort!,
+          baud: _selectedBaudrate,
+          reductionMethod: reductionMethod,
           dataFormat: dataFormat,
         );
-        _isSimulated = _serial?.simulate ?? true;
-        final simSuccess = _serial!.connect(
-          onPacket: (packet) {
-            setLastPaket(packet);
-            setErrorMessage(null);
-            try {
-              addPacketToPacketController(packet);
-            } catch (_) {}
-            notifyListeners();
-          },
-          onError: (error) {
-            setErrorMessage('Simulation error: $error');
-            notifyListeners();
-          },
+
+        final simSuccess = _simulationController!.connect(
+          setLastPaket: setLastPaket,
+          setErrorMessage: setErrorMessage,
+          addPacketToPacketController: addPacketToPacketController,
+          setCurrentSamples: setCurrentSamples,
+          addSampleToGraph: addSampleToGraph,
+          getGraphStartTime: () => graphStartTime,
+          isRecording: () => isRecording,
+          setGraphStartTime: setGraphStartTime,
+          getRecorder: () => recorder,
+          addToGraphIndex: addToGraphIndex,
+          notifyListeners: notifyListeners,
         );
+
         if (simSuccess) {
+          _serial = _simulationController!.source;
+          _isSimulated = _simulationController!.isSimulated;
+          _samplingManager = _simulationController!.samplingManager;
+
           setConnected(true);
           setErrorMessage(null);
           notifyListeners();
 
-          // Initialize sampling manager (samples every 1 second)
-          _samplingManager = SamplingManager(
-            reductionMethod: reductionMethod,
-            onSampleReady: (samples) async {
-              setCurrentSamples(samples);
-
-              for (var sample in samples) {
-                // Only add the selected sensor to the graph
-                addSampleToGraph(
-                  sample.dataStream,
-                  sample.value,
-                  sample.dataUnit,
-                );
-
-                try {
-                  if (recorder != null && isRecording) {
-                    await recorder!.recordSample(
-                      sample.dataStream,
-                      sample.dataUnit,
-                      sample,
-                    );
-                  }
-                } catch (e) {
-                  // ignore recording errors for now
-                }
-              }
-
-              if (recorder != null && isRecording) {
-                addToGraphIndex(1);
-              }
-              notifyListeners();
-            },
-          );
-
           maybeStartRecorder();
+          _isConnecting = false;
+          notifyListeners();
           return null;
         }
       }
@@ -405,6 +405,8 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       _serial = null;
       _isSimulated = false;
       setErrorMessage('Connection error: $e');
+      notifyListeners();
+      _isConnecting = false;
       notifyListeners();
       return errorMessage;
     }
@@ -417,11 +419,21 @@ class SerialConnectionViewModel extends ConnectionBaseViewModel {
       _samplingManager!.dispose();
     }
 
+    // Dispose simulation controller if present
+    if (_simulationController != null) {
+      _simulationController!.dispose();
+      _simulationController = null;
+    }
+
     _serial?.disconnect();
     _serial = null;
     _samplingManager = null;
 
     super.disconnect();
+
+    // Resume port scanning after disconnect
+    _scanPorts();
+
     notifyListeners();
   }
 
