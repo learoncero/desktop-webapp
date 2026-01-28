@@ -16,6 +16,11 @@ Repository: https://github.com/learoncero/desktop-webapp
 - Load previously recorded CSV files for inspection.
 - Desktop-targeted UI (Windows, macOS, Linux).
 
+<p align="center">
+<img src="images/Ubuntu_Plot.png" alt="SensorDash showing recording" width="500">
+<img src="images/Ubuntu_Settings.png" alt="SensorDash showing settings" width="500">
+</p>
+
 ## Requirements
 
 - Flutter SDK. See https://flutter.dev for installation.
@@ -94,24 +99,24 @@ This project contains unit tests for the simulated serial port behaviour in the 
   ```
 
 ## Possible Improvements
- 
+
 - **Serial connection and port selection**\
   The current library used for establishing the serial connection and selecting ports is unreliable and occasionally causes the application to freeze completely. Alternative libraries should be evaluated and tested for better stability.
- 
+
 - **Statistics scope (time range selection)**\
   Currently, all statistics are calculated over the entire recorded time span. An option to switch between statistics for the full dataset and statistics limited to the currently visible time window could be added.
- 
+
 - **User-defined CSV headers for incoming data**\
   The application currently does not allow customization of CSV headers. A mechanism that lets users define column headers that correspond to the structure and semantics of the data they transmit to the application could be introduced.
- 
+
 - **Graph layout and UI overlap**\
   The graph plot is partially hidden behind the data stream dropdown menu. The UI layout should be adjusted to prevent overlapping elements and ensure the graph remains fully visible.
- 
+
 - **Data format support for incoming data**\
   Support for incoming data formats could be expanded. Currently, the application only accepts JSON and a predefined CSV format.
- 
+
 - **Multiple sensor support**\
   The serial connection has only been tested with a single sensor that continuously transmits data. Sensors that require prior configuration or explicit start/stop commands are currently not supported by the application.
- 
+
 - **Out-of-order data handling and timestamps**\
   Incoming data is timestamped by the application upon reception and no checks are performed for out-of-order arrival. As a result, delayed or reordered data packets are not detected or handled. Future improvements could include validating data order or supporting sensor-provided timestamps.
