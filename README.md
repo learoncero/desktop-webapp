@@ -98,6 +98,15 @@ This project contains unit tests for the simulated serial port behaviour in the 
   flutter analyze
   ```
 
+## Lessons Learned
+
+- One of the biggest challenges was the initial **architecture design**. Moving from a React mindset to Flutter required a significant shift in thinking. Adopting the official Flutter guidelines and introducing a Model–View–ViewModel (MVVM) architecture ultimately led to a much cleaner and more maintainable structure.
+- **State management** turned out to be more complex than expected. Using ChangeNotifier and ListenableBuilder quickly became hard to manage as the application grew. Splitting responsibilities into multiple ViewModels, especially after introducing UDP support, significantly improved readability and maintainability.
+- We also encountered several **platform-specific issues**. On Linux, the application icon could not be set reliably, and on Windows, establishing serial connections sometimes resulted in very long connection times. These issues were addressed pragmatically, for example by adding loading spinners and using a fixed port selection instead of dynamic enumeration.
+- Another important learning was robust **error handling** and dealing with **edge cases**. This required careful design decisions, particularly when handling dynamic data streams and CSV logging, where data availability and structure can change during runtime.
+
+Overall, we learned that Flutter enables productive development, but a clean architecture and early consideration of platform-specific constraints are crucial for building a stable and maintainable desktop application.
+
 ## Possible Improvements
 
 - **Serial connection and port selection**\
