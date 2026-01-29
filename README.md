@@ -28,6 +28,8 @@ Repository: https://github.com/learoncero/desktop-webapp
 
 ## Build & Run (development)
 
+Install the Flutter SDK as stated in the flutter docs: https://docs.flutter.dev/install/quick
+
 Example for Windows (PowerShell):
 
 1. Install dependencies:
@@ -97,6 +99,12 @@ This project contains unit tests for the simulated serial port behaviour in the 
   ```powershell
   flutter analyze
   ```
+
+Apart from these tests the app was regularly tested manually on windows and linux, whenever a change happened. This is to ensure that the features and added functionality work as intended and to check that existing functionality was not broken by an update. At the time of final testing the following versions were used:
+- Windows: Windows 11 Version 10.0.26200 Build 26200
+- Linux: Ubuntu 24.03.3 LTS
+
+A version for Mac was tested once, that proved to run, but outlined a important flaw in the app, that the serial COM ports were fixed at first.
 
 ## Lessons Learned
 
